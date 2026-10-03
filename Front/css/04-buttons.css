@@ -1,0 +1,282 @@
+/* ==========================================================================
+   Cockpit DS — 04 · Boutons & liens
+   Hauteurs communes 24/28/32/40 · les variantes ne redéfinissent que des
+   propriétés locales (--btn-*), jamais la structure.
+   ========================================================================== */
+
+.ck-btn {
+  --btn-h: var(--ck-h-md);
+  --btn-px: 12px;
+  --btn-fs: var(--ck-text-13);
+  --btn-icon: var(--ck-icon-md);
+  --btn-bg: var(--ck-surface);
+  --btn-fg: var(--ck-ink-1);
+  --btn-bd: var(--ck-line-strong);
+  --btn-bg-hover: var(--ck-surface-2);
+  --btn-fg-hover: var(--ck-ink-1);
+  --btn-bd-hover: var(--ck-line-control);
+  --btn-shadow: var(--ck-shadow-xs);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ck-gap-xs);
+  height: var(--btn-h);
+  padding: 0 var(--btn-px);
+  border: 1px solid var(--btn-bd);
+  border-radius: var(--ck-radius-sm);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  box-shadow: var(--btn-shadow);
+  font-size: var(--btn-fs);
+  font-weight: var(--ck-weight-semibold);
+  line-height: 1;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color var(--ck-dur-1) var(--ck-ease-out),
+    border-color var(--ck-dur-1) var(--ck-ease-out),
+    color var(--ck-dur-1) var(--ck-ease-out),
+    box-shadow var(--ck-dur-1) var(--ck-ease-out),
+    transform var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-btn:hover {
+  background: var(--btn-bg-hover);
+  border-color: var(--btn-bd-hover);
+  color: var(--btn-fg-hover);
+  text-decoration: none;
+}
+
+.ck-btn:active {
+  transform: translateY(0.5px);
+}
+
+.ck-btn .ck-icon {
+  width: var(--btn-icon);
+  height: var(--btn-icon);
+}
+
+/* Variantes ----------------------------------------------------------------- */
+.ck-btn--primary {
+  --btn-bg: var(--ck-accent);
+  --btn-fg: var(--ck-on-accent);
+  --btn-bd: var(--ck-accent);
+  --btn-bg-hover: var(--ck-accent-hover);
+  --btn-fg-hover: var(--ck-on-accent);
+  --btn-bd-hover: var(--ck-accent-hover);
+  --btn-shadow: var(--ck-shadow-primary);
+}
+
+.ck-btn--primary:active {
+  --btn-bg-hover: var(--ck-accent-active);
+}
+
+.ck-btn--ghost {
+  --btn-bg: transparent;
+  --btn-fg: var(--ck-ink-2);
+  --btn-bd: transparent;
+  --btn-bg-hover: var(--ck-surface-3);
+  --btn-bd-hover: transparent;
+  --btn-shadow: none;
+}
+
+.ck-btn--danger {
+  --btn-bg: var(--ck-danger-soft);
+  --btn-fg: var(--ck-danger-ink);
+  --btn-bd: var(--ck-danger-line);
+  --btn-bg-hover: color-mix(in srgb, var(--ck-danger-soft) 55%, var(--ck-danger-line));
+  --btn-fg-hover: var(--ck-danger-ink);
+  --btn-bd-hover: var(--ck-danger);
+  --btn-shadow: none;
+}
+
+.ck-btn--good {
+  --btn-bg: var(--ck-good-soft);
+  --btn-fg: var(--ck-good-ink);
+  --btn-bd: var(--ck-good-line);
+  --btn-bg-hover: color-mix(in srgb, var(--ck-good-soft) 55%, var(--ck-good-line));
+  --btn-fg-hover: var(--ck-good-ink);
+  --btn-bd-hover: var(--ck-good);
+  --btn-shadow: none;
+}
+
+.ck-btn--warn {
+  --btn-bg: var(--ck-warn-soft);
+  --btn-fg: var(--ck-warn-ink);
+  --btn-bd: var(--ck-warn-line);
+  --btn-bg-hover: color-mix(in srgb, var(--ck-warn-soft) 55%, var(--ck-warn-line));
+  --btn-fg-hover: var(--ck-warn-ink);
+  --btn-bd-hover: var(--ck-warn);
+  --btn-shadow: none;
+}
+
+/* Emphase pleine pour une action confirmée (destructive ou de relance) */
+.ck-btn--danger.ck-btn--solid {
+  --btn-bg: var(--ck-danger);
+  --btn-fg: var(--ck-white);
+  --btn-bd: var(--ck-danger);
+  --btn-bg-hover: var(--ck-danger-ink);
+  --btn-fg-hover: var(--ck-white);
+  --btn-bd-hover: var(--ck-danger-ink);
+}
+
+.ck-btn--good.ck-btn--solid {
+  --btn-bg: var(--ck-good-ink);
+  --btn-fg: var(--ck-white);
+  --btn-bd: var(--ck-good-ink);
+  --btn-bg-hover: color-mix(in srgb, var(--ck-good-ink) 84%, var(--ck-ink-1));
+  --btn-fg-hover: var(--ck-white);
+  --btn-bd-hover: color-mix(in srgb, var(--ck-good-ink) 84%, var(--ck-ink-1));
+}
+
+/* Bouton-bascule actif (aria-pressed) */
+.ck-btn[aria-pressed="true"],
+.ck-btn.is-active {
+  --btn-bg: var(--ck-accent-soft);
+  --btn-fg: var(--ck-accent-ink);
+  --btn-bd: var(--ck-accent-line);
+  --btn-bg-hover: var(--ck-accent-100);
+  --btn-fg-hover: var(--ck-accent-ink);
+  --btn-bd-hover: var(--ck-accent-300);
+}
+
+/* Tailles ------------------------------------------------------------------- */
+.ck-btn--xs {
+  --btn-h: var(--ck-h-xs);
+  --btn-px: 8px;
+  --btn-fs: var(--ck-text-12);
+  --btn-icon: var(--ck-icon-sm);
+  gap: var(--ck-space-4);
+}
+
+.ck-btn--sm {
+  --btn-h: var(--ck-h-sm);
+  --btn-px: 10px;
+  --btn-fs: var(--ck-text-12);
+  --btn-icon: var(--ck-icon-sm);
+}
+
+.ck-btn--lg {
+  --btn-h: var(--ck-h-lg);
+  --btn-px: 16px;
+  --btn-fs: var(--ck-text-14);
+  --btn-icon: var(--ck-icon-md);
+  gap: var(--ck-space-8);
+}
+
+.ck-btn--icon {
+  width: var(--btn-h);
+  padding: 0;
+}
+
+.ck-btn--block {
+  width: 100%;
+}
+
+/* États --------------------------------------------------------------------- */
+.ck-btn:disabled,
+.ck-btn[aria-disabled="true"],
+.ck-btn.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none;
+}
+
+/* Chargement (y compris les requêtes htmx) — largeur stable, aucun saut */
+.ck-btn.is-loading,
+.ck-btn.htmx-request {
+  color: transparent !important;
+  pointer-events: none;
+}
+
+.ck-btn.is-loading > *,
+.ck-btn.htmx-request > * {
+  visibility: hidden;
+}
+
+.ck-btn.is-loading::after,
+.ck-btn.htmx-request::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 14px;
+  height: 14px;
+  margin: auto;
+  border: 2px solid var(--btn-fg);
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: ck-spin 0.7s linear infinite;
+}
+
+/* Groupe de boutons accolés */
+.ck-btn-group {
+  display: inline-flex;
+  isolation: isolate;
+}
+
+.ck-btn-group > .ck-btn {
+  border-radius: 0;
+}
+
+.ck-btn-group > .ck-btn + .ck-btn {
+  margin-left: -1px;
+}
+
+.ck-btn-group > .ck-btn:first-child {
+  border-radius: var(--ck-radius-sm) 0 0 var(--ck-radius-sm);
+}
+
+.ck-btn-group > .ck-btn:last-child {
+  border-radius: 0 var(--ck-radius-sm) var(--ck-radius-sm) 0;
+}
+
+.ck-btn-group > .ck-btn:hover,
+.ck-btn-group > .ck-btn:focus-visible,
+.ck-btn-group > .ck-btn[aria-pressed="true"],
+.ck-btn-group > .ck-btn.is-active {
+  z-index: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Liens
+   -------------------------------------------------------------------------- */
+.ck-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ck-space-4);
+  color: var(--ck-accent-ink);
+  font-weight: var(--ck-weight-medium);
+}
+
+.ck-link:hover {
+  color: var(--ck-accent-800);
+  text-decoration: underline;
+}
+
+.ck-link--muted {
+  color: var(--ck-ink-3);
+}
+
+.ck-link--muted:hover {
+  color: var(--ck-ink-1);
+}
+
+.ck-link .ck-icon {
+  width: 14px;
+  height: 14px;
+  transition: transform var(--ck-dur-2) var(--ck-ease-out);
+}
+
+.ck-link--arrow:hover .ck-icon {
+  transform: translateX(2px);
+}
+
+.ck-link--external:hover .ck-icon {
+  transform: translate(1px, -1px);
+}

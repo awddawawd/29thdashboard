@@ -1,0 +1,273 @@
+/* ==========================================================================
+   Cockpit DS — 09 · Surcouches
+   Dialogue (élément <dialog> natif : focus piégé et Échap gérés par le
+   navigateur), menu déroulant, infobulle.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Dialogue
+   -------------------------------------------------------------------------- */
+.ck-dialog {
+  --d-w: 560px;
+  width: min(var(--d-w), calc(100vw - 32px));
+  max-width: none;
+  max-height: min(calc(100vh - 64px), 880px);
+  margin: auto;
+  padding: 0;
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-lg);
+  background: var(--ck-surface);
+  color: var(--ck-ink-2);
+  box-shadow: var(--ck-shadow-xl);
+  overflow: hidden;
+}
+
+.ck-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  animation: ck-dialog-in var(--ck-dur-3) var(--ck-ease-out);
+}
+
+.ck-dialog::backdrop {
+  background: rgba(15, 22, 35, 0.36);
+  backdrop-filter: blur(2px);
+}
+
+.ck-dialog[open]::backdrop {
+  animation: ck-fade var(--ck-dur-3) var(--ck-ease-out);
+}
+
+.ck-dialog--sm { --d-w: 420px; }
+.ck-dialog--lg { --d-w: 760px; }
+
+.ck-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ck-space-16);
+  flex-shrink: 0;
+  padding: var(--ck-space-16) var(--ck-inset-lg);
+  border-bottom: var(--ck-border-soft);
+}
+
+.ck-dialog__title {
+  color: var(--ck-ink-1);
+  font-size: var(--ck-text-16);
+  line-height: 22px;
+  font-weight: var(--ck-weight-semibold);
+  letter-spacing: var(--ck-tracking-title);
+}
+
+.ck-dialog__sub {
+  margin-top: var(--ck-space-2);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+}
+
+.ck-dialog__close {
+  margin: -2px -8px 0 0;
+}
+
+.ck-dialog__body {
+  flex: 1;
+  min-height: 0;
+  padding: var(--ck-space-20) var(--ck-inset-lg);
+  overflow-y: auto;
+}
+
+.ck-dialog__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ck-gap-sm);
+  flex-shrink: 0;
+  padding: var(--ck-space-12) var(--ck-inset-lg);
+  border-top: var(--ck-border-soft);
+  background: var(--ck-surface-2);
+}
+
+.ck-dialog__footer--between {
+  justify-content: space-between;
+}
+
+@keyframes ck-dialog-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+/* --------------------------------------------------------------------------
+   Menu déroulant — rayon imbriqué : 6px (item) + 4px (marge) = 10px
+   -------------------------------------------------------------------------- */
+.ck-dropdown {
+  position: relative;
+  display: inline-flex;
+}
+
+.ck-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: var(--ck-z-dropdown);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 220px;
+  max-width: 320px;
+  max-height: 340px;
+  padding: var(--ck-space-4);
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-md);
+  background: var(--ck-surface);
+  box-shadow: var(--ck-shadow-lg);
+  overflow-y: auto;
+  transform-origin: top right;
+  animation: ck-menu-in var(--ck-dur-2) var(--ck-ease-out);
+}
+
+.ck-menu[hidden] {
+  display: none;
+}
+
+.ck-menu--start {
+  right: auto;
+  left: 0;
+  transform-origin: top left;
+}
+
+.ck-menu__label {
+  padding: var(--ck-space-8) var(--ck-space-8) var(--ck-space-4);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-11);
+  line-height: 16px;
+  font-weight: var(--ck-weight-semibold);
+  letter-spacing: var(--ck-tracking-overline);
+  text-transform: uppercase;
+}
+
+.ck-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-8);
+  width: 100%;
+  min-height: var(--ck-h-md);
+  padding: 0 var(--ck-space-8);
+  border-radius: var(--ck-radius-sm);
+  color: var(--ck-ink-2);
+  font-size: var(--ck-text-13);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--ck-dur-1) var(--ck-ease-out),
+    color var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-menu__item:hover,
+.ck-menu__item:focus-visible {
+  background: var(--ck-surface-3);
+  color: var(--ck-ink-1);
+  text-decoration: none;
+  outline: none;
+}
+
+.ck-menu__item .ck-icon {
+  width: 15px;
+  height: 15px;
+  color: var(--ck-ink-3);
+}
+
+.ck-menu__item.is-active,
+.ck-menu__item[aria-checked="true"] {
+  background: var(--ck-accent-soft);
+  color: var(--ck-accent-ink);
+  font-weight: var(--ck-weight-semibold);
+}
+
+.ck-menu__item.is-active .ck-icon,
+.ck-menu__item[aria-checked="true"] .ck-icon {
+  color: var(--ck-accent);
+}
+
+[data-tone="danger"].ck-menu__item,
+[data-tone="danger"].ck-menu__item .ck-icon {
+  color: var(--ck-danger-ink);
+}
+
+[data-tone="danger"].ck-menu__item:hover {
+  background: var(--ck-danger-soft);
+}
+
+.ck-menu__meta {
+  margin-left: auto;
+  padding-left: var(--ck-space-12);
+  color: var(--ck-ink-3);
+  font-family: var(--ck-font-mono);
+  font-stretch: var(--ck-mono-stretch);
+  font-size: var(--ck-text-11);
+}
+
+.ck-menu__sep {
+  height: 1px;
+  margin: var(--ck-space-4) calc(var(--ck-space-4) * -1);
+  background: var(--ck-line-soft);
+}
+
+.ck-menu__empty {
+  padding: var(--ck-space-12);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-12);
+  text-align: center;
+}
+
+@keyframes ck-menu-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+/* --------------------------------------------------------------------------
+   Infobulle — CSS pur : data-ck-tooltip="Texte" (+ data-ck-tooltip-pos="bottom")
+   -------------------------------------------------------------------------- */
+[data-ck-tooltip] {
+  position: relative;
+}
+
+[data-ck-tooltip]::after {
+  content: attr(data-ck-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  z-index: var(--ck-z-tooltip);
+  padding: var(--ck-space-4) var(--ck-space-8);
+  border-radius: var(--ck-radius-sm);
+  background: var(--ck-ink-1);
+  color: var(--ck-white);
+  box-shadow: var(--ck-shadow-md);
+  font-family: var(--ck-font-sans);
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+  font-weight: var(--ck-weight-medium);
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition:
+    opacity var(--ck-dur-2) var(--ck-ease-out),
+    transform var(--ck-dur-2) var(--ck-ease-out);
+}
+
+[data-ck-tooltip]:hover::after,
+[data-ck-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition-delay: 350ms;
+}
+
+[data-ck-tooltip-pos="bottom"]::after {
+  top: calc(100% + 8px);
+  bottom: auto;
+  transform: translate(-50%, -4px);
+}

@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <title>Serveur VPS · Cockpit WaaS</title>
+    <meta name="description" content="Flotte de conteneurs : ressources de l'hôte, état de chaque vitrine et actions de cycle de vie.">
+    <!-- @include head.html -->
+  </head>
+  <body>
+    <!-- @include body-start.html brand="Cockpit WaaS" -->
+
+    <div class="ck-app" id="cockpit-app">
+      <!-- @include admin/sidebar.html -->
+      <div class="ck-scrim"></div>
+
+      <div class="ck-main">
+        <!-- @include admin/topbar.html title="Serveur VPS" -->
+
+        <main class="ck-content" id="main" tabindex="-1">
+          <div class="ck-stack">
+            <div id="vps-docker-alert" hidden></div>
+            <div class="ck-kpi-row" id="vps-kpis" aria-label="Ressources de la flotte">
+              <!-- @include skeleton/kpis.html -->
+            </div>
+
+            <article class="ck-card">
+              <header class="ck-card__header">
+                <div class="ck-card__heading">
+                  <h2 class="ck-card__title">Flotte de conteneurs</h2>
+                  <p class="ck-card__subtitle" id="vps-sub"><span class="ck-skeleton ck-skeleton--text ck-skeleton--w35"></span></p>
+                </div>
+                <div class="ck-card__actions">
+                  <span class="ck-text-caption" id="vps-refresh-note"></span>
+                </div>
+              </header>
+              <div id="vps-table">
+                <!-- @include skeleton/table.html cols="8" rows="5" -->
+              </div>
+            </article>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div id="modal-container"></div>
+
+    <!-- @include scripts.html -->
+    <script>
+    (function () {
+      'use strict';
+      const { h, fmt } = UI;
+      const $ = (id) => document.getElementById(id);
+      const TRANSITIONAL = ['starting', 'stopping', 'restarting'];
+      let sites = [];
+      let host = {};
+      let poller = null;
+
+      function renderKpis(counts) {
+        const running = sites.filter((s) => s.running);
+        const fleetRam = running.reduce((sum, s) => sum + (Number(s.memory_mb) || 0), 0);
+        const disk = sites.reduce((sum, s) => sum + (Number(s.disk_mb) || 0), 0);
+        const cpus = running.map((s) => Number(s.cpu_percent)).filter((v) => Number.isFinite(v));
+        const avgCpu = cpus.length ? cpus.reduce((a, b) => a + b, 0) / cpus.length : 0;
+        const deployed = sites.filter((s) => s.status !== 'not_provisioned').length;
+        UI.replace($('vps-kpis'),
+          UI.kpi({
+            label: 'Conteneurs', icon: 'server', tone: running.length ? 'good' : 'warn',
+            value: h('span', null, String(running.length), h('span', { class: 'ck-muted' }, ` / ${deployed}`)),
+            meta: `${counts.stopped} arrêté(s) · ${counts.error} en erreur · ${counts.not_provisioned} sans serveur`
+          }),
+          UI.kpi({
+            label: 'RAM de la flotte', value: fmt.decimal(fleetRam, 1), unit: 'Mo', icon: 'memory',
+            meta: host.ram_total_gb != null ? `Hôte ${fmt.decimal(host.ram_used_gb)} / ${fmt.decimal(host.ram_total_gb)} Go (${fmt.percent(host.ram_percent, 0)})` : 'Mémoire de l\'hôte non mesurée'
+          }),
+          UI.kpi({
+            label: 'Disque des sites', value: fmt.decimal(disk, 1), unit: 'Mo', icon: 'hard-drive',
+            meta: host.disk_total_gb != null ? `Hôte ${fmt.decimal(host.disk_used_gb)} / ${fmt.decimal(host.disk_total_gb)} Go (${fmt.percent(host.disk_percent, 0)})` : 'Couche en écriture des conteneurs'
+          }),
+          UI.kpi({
+            label: 'CPU moyen', value: fmt.decimal(avgCpu, 1), unit: '%', icon: 'cpu',
+            meta: host.cpu_percent != null ? `Hôte ${fmt.percent(host.cpu_percent, 0)} · ${host.cpu_logical || '—'} vCPU` : `${running.length} conteneur(s) mesuré(s)`
+          }));
+      }
+
+      async function act(site, action, button) {
+        const labels = { start: 'Démarrage', stop: 'Arrêt', 'force-stop': 'Arrêt forcé', restart: 'Redémarrage', rebuild: 'Reconstruction' };
+        if (action === 'force-stop' || action === 'rebuild') {
+          const ok = await UI.confirm({
+            title: action === 'rebuild' ? 'Reconstruire le conteneur ?' : 'Arrêt forcé (SIGKILL) ?',
+            message: action === 'rebuild'
+              ? `Le conteneur de « ${site.name} » est recréé depuis son dépôt ; le contenu éditable est resynchronisé depuis Supabase.`
+              : `Le conteneur de « ${site.name} » est tué immédiatement, sans arrêt propre.`,
+            confirmLabel: action === 'rebuild' ? 'Reconstruire' : 'Forcer l\'arrêt', tone: 'danger', icon: action === 'rebuild' ? 'hammer' : 'square'
+          });
+          if (!ok) return;
+        }
+        UI.busy(button, true);
+        try {
+          const res = await App.api(`/admin/api/sites/${encodeURIComponent(site.site_id)}/action`, { method: 'POST', query: { action } });
+          Cockpit.toast({ title: `${labels[action]} effectué`, message: `${site.name} : ${UI.statusLabel(res.container_status === 'exited' ? 'stopped' : res.container_status)}`, tone: 'good', duration: 2800 });
+          await load();
+        } catch (error) {
+          App.toastError(error, `${labels[action]} impossible`);
+          UI.busy(button, false);
+        }
+      }
+
+      function rowActions(site) {
+        const b = (label, action, variant, icon, title, iconOnly) => UI.btn(label, {
+          variant, size: 'xs', icon, title, iconOnly: !!iconOnly, onClick: (event) => act(site, action, event.currentTarget)
+        });
+        const details = UI.btn(`Console de ${site.name}`, { href: `/admin/vps/detail?id=${encodeURIComponent(site.site_id)}`, icon: 'terminal', variant: 'ghost', size: 'xs', iconOnly: true });
+        const s = site.status;
+        if (s === 'not_provisioned') return [b('Déployer', 'rebuild', 'primary', 'rocket', 'Créer le conteneur depuis le dépôt de la fiche'), details];
+        if (TRANSITIONAL.includes(s) && s !== 'restarting') return [h('span', { class: 'ck-busy', role: 'status' }, h('span', { class: 'ck-spinner', 'aria-hidden': 'true' }), UI.statusLabel(s)), details];
+        if (site.running) return [b('Arrêter', 'stop', 'secondary', 'power', 'Arrêt gracieux'), b('Stop', 'force-stop', 'danger', 'square', 'Arrêt forcé (SIGKILL)', true), details];
+        if (s === 'error' || s === 'restarting') return [b('Relancer', 'restart', 'good', 'play', 'Relancer'), b('Stop', 'force-stop', 'danger', 'square', 'Arrêt forcé (SIGKILL)', true), details];
+        return [b('Démarrer', 'start', 'good', 'play', 'Démarrer'), details];
+      }
+
+      function uptimeCell(site) {
+        const node = h('span', { class: 'ck-table__sub ck-mono' }, site.running ? '' : 'Arrêté');
+        if (site.running && site.started_at_epoch) {
+          node.setAttribute('data-started-at', String(site.started_at_epoch));   // compteur tenu par cockpit.js
+          node.title = 'Durée depuis le démarrage';
+          node.textContent = fmt.duration(Date.now() / 1000 - site.started_at_epoch);
+        }
+        return node;
+      }
+
+      function renderTable() {
+        const rows = sites.map((site) => UI.clickableRow(`/admin/vps/detail?id=${encodeURIComponent(site.site_id)}`, [
+          UI.td([h('a', { class: 'ck-table__primary', href: `/admin/vps/detail?id=${encodeURIComponent(site.site_id)}`, title: site.name }, site.name),
+            h('span', { class: 'ck-table__sub ck-mono', title: `${site.site_id} · ${site.container_id || 'aucun conteneur'}` }, `${site.site_id} · ${site.container_id || 'aucun conteneur'}`)]),
+          UI.td(site.port ? `:${site.port}` : '—', 'ck-mono'),
+          UI.td([UI.statusBadge(site.status), site.health === 'unhealthy' ? h('div', { style: { 'margin-top': '2px' } }, UI.badge('Healthcheck KO', 'danger', { size: 'sm' })) : null]),
+          UI.tdNum(h('span', { class: 'ck-mono' }, site.memory_mb != null ? `${fmt.decimal(site.memory_mb, 1)} Mo` : '—')),
+          UI.tdNum(h('span', { class: 'ck-mono' }, site.disk_mb != null ? `${fmt.decimal(site.disk_mb, 1)} Mo` : '—')),
+          UI.tdNum(h('span', { class: 'ck-mono' }, site.cpu_percent != null ? `${fmt.decimal(site.cpu_percent, 1)} %` : '—'), uptimeCell(site)),
+          UI.td(site.restart_count ? UI.tag(`${site.restart_count} redém.`, { tone: 'warn', mono: true, title: `${site.restart_count} redémarrage(s)` }) : UI.tag('DOCKER', { mono: true })),
+          UI.tdActions(...rowActions(site))
+        ]));
+        UI.replace($('vps-table'), sites.length
+          ? UI.table({ caption: 'Conteneurs de la flotte', columns: ['Site', 'Port', 'Statut', { label: 'RAM', kind: 'num' }, { label: 'Disque', kind: 'num' }, { label: 'CPU · uptime', kind: 'num' }, 'Moteur', { label: '', kind: 'actions' }], rows })
+          : UI.empty({ title: 'Aucun conteneur', desc: 'Chaque site dispose de son propre conteneur dédié et durci.', icon: 'server', actions: [UI.btn('Nouveau site', { href: '/admin/sites?new=1', icon: 'plus', variant: 'primary', size: 'sm' })] }));
+      }
+
+      async function load() {
+        const [catalog, hostSample] = await Promise.all([
+          App.api('/admin/api/sites'),
+          App.api('/admin/api/health/host').catch(() => ({}))
+        ]);
+        sites = catalog.containers || [];
+        host = hostSample || {};
+        renderKpis(catalog.counts);
+        renderTable();
+        // Sondage rapide seulement pendant une transition courte (pas pour un crashloop durable).
+        const busy = sites.some((s) => s.status === 'starting' || s.status === 'stopping');
+        $('vps-sub').textContent = `${sites.length} conteneur(s) · actions rapides par ligne`;
+        $('vps-refresh-note').textContent = busy ? 'Actualisation toutes les 3 s' : 'Actualisation toutes les 10 s';
+        const alertBox = $('vps-docker-alert');
+        alertBox.hidden = catalog.docker_available;
+        if (!catalog.docker_available) {
+          UI.replace(alertBox, UI.alert({ tone: 'danger', bar: true, icon: 'server', title: 'Moteur Docker injoignable', text: "L'API ne parvient pas à joindre le démon Docker : états et actions indisponibles. Démarrez Docker sur l'hôte puis actualisez." }));
+        }
+        schedule(busy ? 3000 : 10000);
+      }
+
+      function schedule(interval) {
+        if (poller && poller.interval === interval) return;
+        if (poller) poller.stop();
+        poller = App.poll(() => load().catch(() => {}), interval);
+        poller.interval = interval;
+      }
+
+      App.onRefresh(load);
+      App.boot(async ({ status }) => {
+        status('Inventaire des conteneurs Docker…');
+        await load();
+      }, { shell: 'admin' });
+    })();
+    </script>
+  </body>
+</html>

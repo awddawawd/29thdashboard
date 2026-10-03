@@ -1,0 +1,350 @@
+/* ==========================================================================
+   Cockpit DS — 02 · Base
+   Reset, typographie de base, focus, sélection, icônes, styles de texte.
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100%;
+  background: var(--ck-canvas);
+  color: var(--ck-ink-2);
+  font-family: var(--ck-font-sans);
+  font-size: var(--ck-text-13);
+  line-height: var(--ck-leading-body);
+  font-weight: var(--ck-weight-regular);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ck-ink-1);
+  font-weight: var(--ck-weight-semibold);
+  line-height: var(--ck-leading-title);
+  letter-spacing: var(--ck-tracking-title);
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+img,
+svg,
+video,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+svg {
+  flex-shrink: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+button {
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+ul[role="list"],
+ol[role="list"] {
+  list-style: none;
+}
+
+/* L'attribut hidden l'emporte toujours sur un display de composant */
+[hidden] {
+  display: none !important;
+}
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+a {
+  color: var(--ck-accent-ink);
+  text-decoration: none;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  transition: color var(--ck-dur-1) var(--ck-ease-out);
+}
+
+a:hover {
+  color: var(--ck-accent-800);
+  text-decoration: underline;
+}
+
+::selection {
+  background: var(--ck-accent-200);
+  color: var(--ck-ink-1);
+}
+
+/* Focus : visible au clavier uniquement, jamais supprimé */
+:focus-visible {
+  outline: var(--ck-focus-width) solid var(--ck-focus-color);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Barres de défilement discrètes */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ck-line-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--ck-line-strong);
+  border: 2px solid transparent;
+  border-radius: var(--ck-radius-pill);
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ck-ink-4);
+}
+
+/* --------------------------------------------------------------------------
+   Icônes — trait fin 1.75, hérite de la couleur du texte
+   Usage : <svg class="ck-icon"><use href="#i-server"/></svg>
+   -------------------------------------------------------------------------- */
+.ck-icon {
+  width: var(--ck-icon-md);
+  height: var(--ck-icon-md);
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--ck-icon-stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: middle;
+}
+
+.ck-icon--sm {
+  width: var(--ck-icon-sm);
+  height: var(--ck-icon-sm);
+}
+
+.ck-icon--lg {
+  width: var(--ck-icon-lg);
+  height: var(--ck-icon-lg);
+}
+
+/* --------------------------------------------------------------------------
+   Styles de texte — les 8 rôles typographiques
+   -------------------------------------------------------------------------- */
+.ck-text-overline {
+  font-size: var(--ck-text-11);
+  line-height: 16px;
+  font-weight: var(--ck-weight-semibold);
+  letter-spacing: var(--ck-tracking-overline);
+  text-transform: uppercase;
+  color: var(--ck-ink-3);
+}
+
+.ck-text-caption {
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+  color: var(--ck-ink-3);
+}
+
+.ck-text-body {
+  font-size: var(--ck-text-13);
+  line-height: 20px;
+  color: var(--ck-ink-2);
+}
+
+.ck-text-strong {
+  font-size: var(--ck-text-14);
+  line-height: 20px;
+  font-weight: var(--ck-weight-semibold);
+  color: var(--ck-ink-1);
+  letter-spacing: var(--ck-tracking-title);
+}
+
+.ck-text-heading {
+  font-size: var(--ck-text-16);
+  line-height: 22px;
+  font-weight: var(--ck-weight-semibold);
+  color: var(--ck-ink-1);
+  letter-spacing: var(--ck-tracking-title);
+}
+
+.ck-text-page {
+  font-size: var(--ck-text-page);
+  line-height: var(--ck-leading-title);
+  font-weight: var(--ck-weight-semibold);
+  color: var(--ck-ink-1);
+  letter-spacing: -0.02em;
+}
+
+.ck-text-figure {
+  font-size: var(--ck-text-figure);
+  line-height: var(--ck-leading-tight);
+  font-weight: var(--ck-weight-semibold);
+  font-stretch: var(--ck-figure-stretch);
+  color: var(--ck-ink-1);
+  letter-spacing: var(--ck-tracking-display);
+}
+
+.ck-text-hero {
+  font-size: var(--ck-text-hero);
+  line-height: 1;
+  font-weight: var(--ck-weight-semibold);
+  font-stretch: var(--ck-figure-stretch);
+  color: var(--ck-ink-1);
+  letter-spacing: -0.04em;
+}
+
+/* Données techniques : URLs, ports, identifiants, numéros de facture */
+.ck-mono {
+  font-family: var(--ck-font-mono);
+  font-stretch: var(--ck-mono-stretch);
+  font-size: 0.9em;
+  letter-spacing: -0.01em;
+}
+
+/* Chiffres alignés (colonnes, axes) — jamais sur un grand chiffre isolé */
+.ck-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.ck-muted {
+  color: var(--ck-ink-3);
+}
+
+.ck-strong {
+  color: var(--ck-ink-1);
+  font-weight: var(--ck-weight-semibold);
+}
+
+.ck-kbd {
+  display: inline-flex;
+  align-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--ck-space-6);
+  border: var(--ck-border);
+  border-bottom-width: 2px;
+  border-radius: var(--ck-radius-xs);
+  background: var(--ck-surface);
+  font-family: var(--ck-font-mono);
+  font-stretch: var(--ck-mono-stretch);
+  font-size: 10.5px;
+  color: var(--ck-ink-2);
+  justify-content: center;
+}
+
+.ck-code {
+  padding: 1px var(--ck-space-6);
+  border-radius: var(--ck-radius-xs);
+  background: var(--ck-surface-3);
+  color: var(--ck-ink-1);
+  font-family: var(--ck-font-mono);
+  font-stretch: var(--ck-mono-stretch);
+  font-size: 0.86em;
+}
+
+/* Accessibilité */
+.ck-sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.ck-skip-link {
+  position: fixed;
+  top: var(--ck-space-12);
+  left: var(--ck-space-12);
+  z-index: var(--ck-z-tooltip);
+  padding: var(--ck-space-8) var(--ck-space-12);
+  border-radius: var(--ck-radius-sm);
+  background: var(--ck-ink-1);
+  color: var(--ck-white);
+  font-weight: var(--ck-weight-semibold);
+  transform: translateY(-160%);
+  transition: transform var(--ck-dur-2) var(--ck-ease-out);
+}
+
+.ck-skip-link:focus-visible {
+  transform: translateY(0);
+  color: var(--ck-white);
+  text-decoration: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Animations partagées (la rotation des spinners est la seule animation linéaire) */
+@keyframes ck-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ck-ping {
+  0% { transform: scale(0.6); opacity: 0.75; }
+  80%, 100% { transform: scale(1.9); opacity: 0; }
+}
+
+@keyframes ck-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@keyframes ck-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes ck-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

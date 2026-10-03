@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <title>Espace client · 29th studio</title>
+    <meta name="description" content="Votre espace client : état de votre vitrine, fréquentation, abonnement, factures et échanges avec le studio.">
+    <!-- @include head.html -->
+  </head>
+  <body>
+    <!-- @include body-start.html brand="Espace client" -->
+
+    <div class="ck-app" id="portal-app">
+      <!-- @include portal/sidebar.html -->
+      <div class="ck-scrim"></div>
+
+      <div class="ck-main">
+        <!-- @include portal/topbar.html title="Vue d'ensemble" -->
+
+        <main class="ck-content" id="main" tabindex="-1">
+          <div class="ck-stack" id="portal-root">
+            <article class="ck-card" id="portal-hero">
+              <div class="ck-card__body">
+                <div class="ck-spread" style="flex-wrap: wrap">
+                  <div class="ck-cluster" style="gap: var(--ck-space-16); flex-wrap: nowrap; min-width: 0">
+                    <span class="ck-skeleton ck-skeleton--square" style="width: 44px; height: 44px" aria-hidden="true"></span>
+                    <div class="ck-stack" style="--ck-stack-gap: var(--ck-space-4); flex: 1; min-width: 180px">
+                      <span class="ck-skeleton ck-skeleton--figure ck-skeleton--w55"></span>
+                      <span class="ck-skeleton ck-skeleton--text ck-skeleton--w35"></span>
+                    </div>
+                  </div>
+                  <div class="ck-cluster">
+                    <span class="ck-skeleton ck-skeleton--pill"></span>
+                    <span class="ck-skeleton ck-skeleton--pill"></span>
+                  </div>
+                </div>
+              </div>
+            </article>
+            <div class="ck-kpi-row" id="portal-kpis" aria-label="Votre vitrine en un coup d'œil">
+              <!-- @include skeleton/kpis.html -->
+            </div>
+
+            <div class="ck-auto-grid" style="--ck-min: 420px">
+              <article class="ck-card">
+                <header class="ck-card__header">
+                  <div class="ck-card__heading">
+                    <h2 class="ck-card__title">Fréquentation</h2>
+                    <p class="ck-card__subtitle">Pages vues et visiteurs uniques · 14 derniers jours</p>
+                  </div>
+                  <div class="ck-card__actions"><span class="ck-badge" data-tone="info"><span class="ck-badge__dot"></span>Temps réel</span></div>
+                </header>
+                <div class="ck-card__body" id="portal-traffic">
+                  <!-- @include skeleton/chart.html -->
+                </div>
+              </article>
+              <article class="ck-card">
+                <header class="ck-card__header">
+                  <div class="ck-card__heading">
+                    <h2 class="ck-card__title">Disponibilité</h2>
+                    <p class="ck-card__subtitle">Contrôlée en continu par nos serveurs · 90 jours</p>
+                  </div>
+                  <div class="ck-card__actions" id="portal-uptime-tag">
+                    <span class="ck-skeleton ck-skeleton--pill"></span>
+                  </div>
+                </header>
+                <div class="ck-card__body" id="portal-uptime">
+                  <div class="ck-stack">
+                    <!-- @include skeleton/stats.html -->
+                    <!-- @include skeleton/bars.html -->
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <div class="ck-auto-grid" style="--ck-min: 320px">
+              <article class="ck-card">
+                <header class="ck-card__header">
+                  <div class="ck-card__heading">
+                    <h2 class="ck-card__title">Actions rapides</h2>
+                    <p class="ck-card__subtitle">Les raccourcis de votre vitrine</p>
+                  </div>
+                </header>
+                <div id="portal-actions">
+                  <!-- @include skeleton/list.html -->
+                </div>
+              </article>
+              <article class="ck-card">
+                <header class="ck-card__header">
+                  <div class="ck-card__heading">
+                    <h2 class="ck-card__title">Dernières factures</h2>
+                    <p class="ck-card__subtitle" id="portal-invoices-sub"><span class="ck-skeleton ck-skeleton--text ck-skeleton--w35"></span></p>
+                  </div>
+                </header>
+                <div id="portal-invoices">
+                  <!-- @include skeleton/list-plain.html -->
+                </div>
+              </article>
+              <article class="ck-card">
+                <header class="ck-card__header">
+                  <div class="ck-card__heading">
+                    <h2 class="ck-card__title">Échanges avec le studio</h2>
+                    <p class="ck-card__subtitle" id="portal-tickets-sub"><span class="ck-skeleton ck-skeleton--text ck-skeleton--w35"></span></p>
+                  </div>
+                </header>
+                <div id="portal-tickets">
+                  <!-- @include skeleton/list-plain.html -->
+                </div>
+              </article>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div id="modal-container"></div>
+
+    <!-- @include scripts.html -->
+    <script>
+    (function () {
+      'use strict';
+      const { h, fmt } = UI;
+      const $ = (id) => document.getElementById(id);
+      const STATUS_KPI = {
+        running: ['En ligne', 'SSL actif · serveur opérationnel', 'good', 'check-circle'],
+        stopped: ['Arrêté', 'Serveur hors ligne', 'danger', 'x-circle'],
+        error: ['Incident', 'Le studio est alerté', 'danger', 'alert-circle'],
+        restarting: ['Incident', 'Redémarrages en boucle', 'danger', 'alert-circle'],
+        not_provisioned: ['En préparation', 'Configuration par le studio', 'warn', 'alert-triangle']
+      };
+
+      function noSite(shell) {
+        const admin = shell.user && shell.user.role === 'admin';
+        UI.replace($('portal-root'), UI.card({ body: UI.empty({
+          title: 'Aucune vitrine rattachée',
+          desc: 'Votre site est en cours de configuration par le studio. Dès sa publication, vous retrouverez ici l\'éditeur, vos factures et votre messagerie dédiée.',
+          icon: 'globe',
+          actions: admin ? [UI.btn('Accéder au cockpit agence', { href: '/admin/dashboard', variant: 'primary', size: 'sm' })] : null
+        }) }));
+      }
+
+      function render(d) {
+        const site = d.site;
+        const withSite = (path) => App.withSite(path, site.site_id);
+        document.title = `Espace client · ${site.name}`;
+
+        UI.replace($('portal-hero'), h('div', { class: 'ck-card__body' },
+          h('div', { class: 'ck-spread', style: { 'flex-wrap': 'wrap' } },
+            h('div', { class: 'ck-cluster', style: { gap: 'var(--ck-space-16)', 'flex-wrap': 'nowrap', 'min-width': '0' } },
+              h('span', { class: 'ck-brand__mark', style: { width: '44px', height: '44px', 'border-radius': '12px' } }, UI.icon('globe')),
+              h('div', { class: 'ck-stack', style: { '--ck-stack-gap': 'var(--ck-space-4)', 'min-width': '0' } },
+                h('h2', { class: 'ck-page-head__title' }, site.name, UI.statusBadge(site.status)),
+                h('div', { class: 'ck-page-head__meta' },
+                  site.url ? h('a', { href: site.url, target: '_blank', rel: 'noopener noreferrer', class: 'ck-mono' }, Views.siteDomain(site)) : h('span', null, 'Publication en cours'),
+                  h('span', { 'aria-hidden': 'true' }, '·'), h('span', null, `Formule ${site.plan_name}`)))),
+            h('div', { class: 'ck-cluster' },
+              UI.btn('Ouvrir l\'éditeur', { href: withSite('/studio'), icon: 'pencil', variant: 'primary', size: 'sm' }),
+              site.url ? UI.btn('Prévisualiser', { href: site.url, icon: 'external', size: 'sm', external: true }) : null))));
+
+        const [statusValue, statusMeta, statusTone, statusIcon] = STATUS_KPI[site.status] || ['En cours…', 'Opération serveur en cours', 'warn', 'refresh'];
+        UI.replace($('portal-kpis'),
+          UI.kpi({ label: 'Vitrine', value: statusValue, icon: statusIcon, tone: statusTone, meta: statusMeta }),
+          UI.kpi({ label: 'En direct', value: String(site.live_visitors || 0), icon: 'eye', tone: site.live_visitors ? 'good' : 'neutral', meta: 'Personnes sur votre vitrine' }),
+          UI.kpi({ label: 'Abonnement', value: site.price_monthly ? fmt.number(site.price_monthly) : 'Inclus', unit: site.price_monthly ? '€/mois' : null, icon: 'credit-card', tone: 'accent', meta: `Formule ${site.plan_name}` }),
+          UI.kpi({ label: 'Assistance studio', value: d.pending_tickets ? `${d.pending_tickets} en cours` : 'Disponible', icon: 'message', tone: d.pending_tickets ? 'warn' : 'good', meta: 'Réponse sous 24 h ouvrées' }));
+
+        Views.trafficChart($('portal-traffic'), d.traffic.series, { height: 230, emptyText: 'Aucune visite enregistrée pour le moment.' });
+
+        const avail = d.availability || {};
+        UI.replace($('portal-uptime-tag'), UI.tag(avail.uptime != null ? `${fmt.percent(avail.uptime, 2)}` : 'Mesure en cours', { mono: true, tone: 'good' }));
+        const bars = h('div');
+        Cockpit.charts.uptime(bars, avail.series || [], { ariaLabel: 'Disponibilité de votre vitrine sur 90 jours' });
+        UI.replace($('portal-uptime'), h('div', { class: 'ck-stack' },
+          UI.stats([
+            ['État', UI.statusBadge(avail.current_state || 'none')],
+            ['Disponibilité', avail.uptime != null ? fmt.percent(avail.uptime, 2) : '—'],
+            ['Contrôles', fmt.number(avail.applicable || 0)]
+          ]), bars));
+
+        const actions = [
+          ['Éditer ma vitrine', 'Textes et images, en direct', withSite('/studio'), 'pencil', false],
+          ['Voir mon site en ligne', site.url ? Views.siteDomain(site) : 'Publication en cours', site.url || '#', 'external', true],
+          ['Demander une modification', 'Écrire au studio', withSite('/portal/support') + '&new=1', 'send', false],
+          ['Factures & règlements', `${d.invoice_totals.count} facture(s)`, withSite('/portal/billing'), 'credit-card', false]
+        ];
+        UI.replace($('portal-actions'), h('div', { class: 'ck-list', role: 'list' }, actions.map(([title, text, href, icon, external]) =>
+          h('a', { class: 'ck-list__item', role: 'listitem', href, target: external ? '_blank' : null, rel: external ? 'noopener noreferrer' : null },
+            h('span', { class: 'ck-feature__icon', 'data-tone': 'accent', style: { width: '32px', height: '32px' } }, UI.icon(icon)),
+            h('div', { class: 'ck-list__main' }, h('span', { class: 'ck-list__title' }, title), h('span', { class: 'ck-list__text' }, text)),
+            h('div', { class: 'ck-list__aside' }, UI.icon('chevron-right'))))));
+
+        const t = d.invoice_totals;
+        $('portal-invoices-sub').textContent = t.pending_count ? `${t.pending_count} à régler · ${fmt.money(t.pending_total)}` : 'Tout est réglé';
+        UI.replace($('portal-invoices'), d.invoices.length
+          ? h('div', { class: 'ck-list', role: 'list' }, d.invoices.slice(0, 4).map((inv) => h('a', { class: 'ck-list__item', role: 'listitem', href: withSite('/portal/billing') },
+            h('div', { class: 'ck-list__main' }, h('span', { class: 'ck-list__title ck-mono' }, inv.number), h('span', { class: 'ck-list__text' }, fmt.date(inv.issued_at))),
+            h('div', { class: 'ck-list__aside' }, h('strong', null, fmt.money(inv.amount)), ' ', UI.statusBadge(inv.status, { size: 'sm' })))))
+          : h('div', { class: 'ck-card__body' }, UI.empty({ title: 'Aucune facture', desc: 'Vos factures mensuelles apparaîtront ici.', icon: 'credit-card', small: true })));
+
+        $('portal-tickets-sub').textContent = d.pending_tickets ? `${d.pending_tickets} demande(s) en cours` : 'Aucune demande en attente';
+        UI.replace($('portal-tickets'), d.tickets.length
+          ? h('div', { class: 'ck-list', role: 'list' }, d.tickets.slice(0, 4).map((tk) => h('a', { class: 'ck-list__item', role: 'listitem', href: `${withSite('/portal/support')}&ticket=${encodeURIComponent(tk.id)}` },
+            h('div', { class: 'ck-list__main' }, h('span', { class: 'ck-list__title' }, tk.subject), h('span', { class: 'ck-list__text' }, tk.snippet)),
+            h('div', { class: 'ck-list__aside' }, tk.unread ? UI.count(tk.unread, 'accent') : null, UI.statusBadge(tk.status, { size: 'sm' })))))
+          : h('div', { class: 'ck-card__body' }, UI.empty({ title: 'Aucun échange', desc: 'Besoin d\'une modification ? Écrivez au studio.', icon: 'message', small: true,
+            actions: [UI.btn('Nouvelle demande', { href: withSite('/portal/support') + '&new=1', size: 'sm', icon: 'send' })] })));
+      }
+
+      async function refresh() {
+        const data = await App.api('/api/v1/portal/overview', { query: { site_id: App.currentSiteId() || undefined } });
+        App.applyPortalShell(data);
+        App.cacheShell(data);            // garde la coque chaude pour la navigation suivante
+        if (data.site) render(data);
+      }
+
+      App.onRefresh(refresh);
+      App.boot(async ({ shell }) => {
+        if (!shell.site) { noSite(shell); return; }
+        render(shell);
+      }, { shell: 'portal' }).then((shell) => {
+        if (shell && shell.site) App.poll(() => refresh().catch(() => {}), 30000);
+      });
+    })();
+    </script>
+  </body>
+</html>

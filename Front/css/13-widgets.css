@@ -1,0 +1,577 @@
+/* ==========================================================================
+   Cockpit DS — 13 · Widgets
+   Système de grille du tableau de bord personnalisable :
+   · 6 colonnes, cellule unitaire au ratio 2:1, gouttière 12px (marge 6px)
+   · la sidebar mesure exactement une colonne (cadre à 7 colonnes)
+   · même géométrie en statique (.ck-bento, rendu serveur) et en édition
+     (GridStack) → aucune différence visuelle entre les deux modes
+   · les gabarits et leurs modes compacts sont dans 14-templates.css
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Grille statique (rendu serveur, aperçus, pages admin)
+   Les marges négatives alignent le bord visible des widgets sur --ck-page-x.
+   -------------------------------------------------------------------------- */
+.ck-bento-frame {
+  container-type: inline-size;
+  margin: calc(var(--ck-grid-margin) * -1);
+}
+
+.ck-bento {
+  --cols: var(--ck-grid-cols);
+  --ratio: var(--ck-cell-ratio);
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-auto-rows: calc(100cqw / var(--cols) / var(--ratio) - var(--ck-grid-margin) * 2);
+  grid-auto-flow: row dense;
+  gap: calc(var(--ck-grid-margin) * 2);
+  padding: var(--ck-grid-margin);
+}
+
+.ck-bento > * {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.ck-bento > [data-w="2"] { grid-column-end: span 2; }
+.ck-bento > [data-w="3"] { grid-column-end: span 3; }
+.ck-bento > [data-w="4"] { grid-column-end: span 4; }
+.ck-bento > [data-w="5"] { grid-column-end: span 5; }
+.ck-bento > [data-w="6"] { grid-column-end: span 6; }
+.ck-bento > [data-h="2"] { grid-row-end: span 2; }
+.ck-bento > [data-h="3"] { grid-row-end: span 3; }
+.ck-bento > [data-h="4"] { grid-row-end: span 4; }
+
+/* Petits conteneurs (tablette, mobile) : 2 colonnes, cellules plus hautes,
+   pas de rangée plafonné par --ck-grid-row-max (même règle que js/grid.js).
+   .ck-bento--fixed conserve la géométrie (aperçus, miniatures, configurateur). */
+@container (max-width: 760px) {
+  .ck-bento:not(.ck-bento--fixed) {
+    --cols: 2;
+    --ratio: 1.5;
+    grid-auto-rows: calc(min(100cqw / var(--cols) / var(--ratio), var(--ck-grid-row-max)) - var(--ck-grid-margin) * 2);
+  }
+
+  .ck-bento:not(.ck-bento--fixed) > * {
+    grid-column-start: auto !important;
+    grid-row-start: auto !important;
+  }
+
+  /* !important : l'emplacement peut venir d'un style en ligne (rendu serveur) */
+  .ck-bento:not(.ck-bento--fixed) > [data-w]:not([data-w="1"]) {
+    grid-column-end: span 2 !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Panneau de widget (bento ou .grid-stack-item-content)
+   -------------------------------------------------------------------------- */
+.ck-widget {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-md);
+  background: var(--ck-surface);
+  box-shadow: var(--ck-shadow-xs);
+  transition:
+    border-color var(--ck-dur-2) var(--ck-ease-out),
+    box-shadow var(--ck-dur-2) var(--ck-ease-out),
+    transform var(--ck-dur-2) var(--ck-ease-out);
+}
+
+.ck-widget__body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  border-radius: inherit;
+  overflow: hidden;
+  container-type: size;
+  container-name: ck-w;
+}
+
+/* Contenu d'un gabarit : réutilise l'anatomie des cartes */
+.ck-w {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.ck-w > .ck-card__body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Le défilement porte sur le corps, ou sur le tableau quand il y en a un
+   (.ck-table-wrap défile déjà en x, donc aussi en y) */
+.ck-w > .ck-card__body--scroll,
+.ck-w > .ck-card__body--scroll > .ck-table-wrap {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ck-line-strong) transparent;
+}
+
+/* Contenu qui déborde : fondu en bas tant qu'il reste à lire. La timeline de
+   défilement est inactive sans débordement → aucun fondu (et aucun sans support). */
+@property --ck-fade {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@supports (animation-timeline: scroll()) {
+  .ck-w > .ck-card__body--scroll,
+  .ck-w > .ck-card__body--scroll > .ck-table-wrap {
+    mask-image: linear-gradient(to bottom, #000 calc(100% - var(--ck-fade)), transparent);
+    animation: ck-scroll-fade linear both;
+    animation-timeline: scroll(self block);
+  }
+
+  @keyframes ck-scroll-fade {
+    0%, 88% { --ck-fade: 28px; }
+    100% { --ck-fade: 0px; }
+  }
+}
+
+/* Points d'accroche des gabarits */
+.ck-w__chart {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.ck-w__chart > .ck-chart {
+  flex: 1;
+}
+
+.ck-w > .ck-card__body.ck-w__center {
+  justify-content: center;
+}
+
+.ck-w__score {
+  margin-bottom: var(--ck-space-16);
+}
+
+.ck-w__gauge .ck-gauge {
+  --size: clamp(36px, 52cqh, 72px);
+}
+
+/* --------------------------------------------------------------------------
+   Intégration GridStack (mode édition)
+   -------------------------------------------------------------------------- */
+.ck-grid-stage {
+  position: relative;
+  container-type: inline-size;
+  margin: calc(var(--ck-grid-margin) * -1);
+}
+
+.ck-widget-grid.grid-stack {
+  position: relative;
+  z-index: 1;
+}
+
+.ck-widget-grid.grid-stack > .grid-stack-item > .ck-widget {
+  overflow: visible !important;
+}
+
+.ck-widget-grid .grid-stack-item {
+  transition:
+    left var(--ck-dur-3) var(--ck-ease-out),
+    top var(--ck-dur-3) var(--ck-ease-out),
+    width var(--ck-dur-3) var(--ck-ease-out),
+    height var(--ck-dur-3) var(--ck-ease-out);
+}
+
+.ck-widget-grid .grid-stack-item.ui-draggable-dragging,
+.ck-widget-grid .grid-stack-item.ui-resizable-resizing {
+  transition: none;
+}
+
+.ck-widget-grid > .grid-stack-item > .ui-resizable-handle {
+  display: none !important;
+}
+
+.ck-widget-grid.grid-stack > .grid-stack-placeholder > .placeholder-content {
+  border: 1px dashed var(--ck-accent-400) !important;
+  border-radius: var(--ck-radius-md) !important;
+  background: color-mix(in srgb, var(--ck-accent) 7%, transparent) !important;
+}
+
+/* Calque des cellules vides (visible en édition) */
+.ck-grid-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: none;
+  grid-template-columns: repeat(var(--cols, 6), minmax(0, 1fr));
+  grid-auto-rows: var(--cell-h, 100px);
+  align-content: start;
+  pointer-events: none;
+}
+
+.ck-grid-bg__cell {
+  padding: var(--ck-grid-margin);
+}
+
+.ck-grid-bg__cell::before {
+  content: "";
+  display: block;
+  height: 100%;
+  border: 1px dashed var(--ck-line-strong);
+  border-radius: var(--ck-radius-md);
+  background: color-mix(in srgb, var(--ck-surface) 55%, transparent);
+}
+
+/* --------------------------------------------------------------------------
+   Mode édition — portée : .ck-app.is-editing (ou tout ancêtre .is-editing)
+   -------------------------------------------------------------------------- */
+.is-editing .ck-grid-bg {
+  display: grid;
+}
+
+.is-editing .ck-widget {
+  border-color: var(--ck-accent-200);
+  box-shadow: 0 0 0 3px var(--ck-accent-soft), var(--ck-shadow-xs);
+  cursor: grab;
+  user-select: none;
+}
+
+.is-editing .ck-widget:hover,
+.is-editing .ck-widget:focus-within {
+  border-color: var(--ck-accent);
+  box-shadow: 0 0 0 3px var(--ck-accent-100), var(--ck-shadow-md);
+}
+
+.is-editing .ck-widget__body {
+  pointer-events: none;
+}
+
+.is-editing .grid-stack-item:hover {
+  z-index: 25 !important;
+}
+
+.is-editing .grid-stack-item.ui-draggable-dragging .ck-widget {
+  border-color: var(--ck-accent);
+  box-shadow: var(--ck-shadow-xl);
+  transform: scale(1.015);
+  cursor: grabbing;
+}
+
+/* Paires de flèches de redimensionnement (une par bord) */
+.ck-resize {
+  position: absolute;
+  z-index: 3;
+  display: none;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: var(--ck-border-strong);
+  border-radius: var(--ck-radius-pill);
+  background: var(--ck-surface);
+  box-shadow: var(--ck-shadow-md);
+}
+
+.ck-resize[data-edge="top"] { top: -14px; left: 50%; transform: translateX(-50%); }
+.ck-resize[data-edge="bottom"] { bottom: -14px; left: 50%; transform: translateX(-50%); }
+.ck-resize[data-edge="left"] { top: 50%; left: -14px; flex-direction: column; transform: translateY(-50%); }
+.ck-resize[data-edge="right"] { top: 50%; right: -14px; flex-direction: column; transform: translateY(-50%); }
+
+.is-editing .ck-widget:hover .ck-resize,
+.is-editing .ck-widget:focus-within .ck-resize {
+  display: inline-flex;
+}
+
+.ck-resize__btn {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: var(--ck-ink-3);
+  transition:
+    background-color var(--ck-dur-1) var(--ck-ease-out),
+    color var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-resize__btn:hover {
+  background: var(--ck-accent-soft);
+  color: var(--ck-accent-ink);
+}
+
+.ck-resize__btn .ck-icon {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2.25;
+}
+
+.ck-resize__btn.is-disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Retrait au clavier / tactile (alternative au glisser vers la corbeille) */
+.ck-widget__remove {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  z-index: 4;
+  display: none;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: var(--ck-border-strong);
+  border-radius: 50%;
+  background: var(--ck-surface);
+  color: var(--ck-ink-3);
+  box-shadow: var(--ck-shadow-md);
+}
+
+.ck-widget__remove:hover {
+  border-color: var(--ck-danger-line);
+  background: var(--ck-danger-soft);
+  color: var(--ck-danger-ink);
+}
+
+.ck-widget__remove .ck-icon {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2.25;
+}
+
+.is-editing .ck-widget:hover .ck-widget__remove,
+.is-editing .ck-widget:focus-within .ck-widget__remove {
+  display: grid;
+}
+
+@media (hover: none) {
+  .is-editing .ck-resize { display: inline-flex; }
+  .is-editing .ck-widget__remove { display: grid; }
+}
+
+/* --------------------------------------------------------------------------
+   Tiroir de widgets (remplace la navigation de la sidebar en édition)
+   -------------------------------------------------------------------------- */
+.ck-drawer {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ck-space-12);
+  min-height: 0;
+  padding-top: var(--ck-space-16);
+}
+
+.ck-app.is-editing .ck-sidebar__nav,
+.ck-app.is-editing .ck-sidebar__footer {
+  display: none;
+}
+
+.ck-app.is-editing .ck-drawer {
+  display: flex;
+}
+
+.ck-drawer__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-2);
+  padding: 0 var(--ck-space-4);
+}
+
+.ck-drawer__title {
+  color: var(--ck-ink-1);
+  font-size: var(--ck-text-13);
+  line-height: 20px;
+  font-weight: var(--ck-weight-semibold);
+}
+
+.ck-drawer__sub {
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+}
+
+.ck-drawer__list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ck-space-8);
+  min-height: 0;
+  margin: 0 calc(var(--ck-space-6) * -1);
+  padding: var(--ck-space-2) var(--ck-space-6) var(--ck-space-12);
+  overflow-y: auto;
+}
+
+.ck-trash {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ck-space-2);
+  padding: var(--ck-space-12);
+  border: 1px dashed var(--ck-danger-line);
+  border-radius: var(--ck-radius-md);
+  background: var(--ck-danger-soft);
+  color: var(--ck-danger-ink);
+  font-size: var(--ck-text-12);
+  font-weight: var(--ck-weight-semibold);
+  text-align: center;
+  transition:
+    border-color var(--ck-dur-2) var(--ck-ease-out),
+    background-color var(--ck-dur-2) var(--ck-ease-out),
+    transform var(--ck-dur-2) var(--ck-ease-out);
+}
+
+.ck-trash .ck-icon {
+  width: 18px;
+  height: 18px;
+  margin-bottom: var(--ck-space-2);
+}
+
+.ck-trash__hint {
+  font-size: var(--ck-text-11);
+  font-weight: var(--ck-weight-medium);
+  opacity: 0.85;
+}
+
+.ck-trash.is-over {
+  border-style: solid;
+  border-color: var(--ck-danger);
+  background: color-mix(in srgb, var(--ck-danger-soft) 55%, var(--ck-danger-line));
+  transform: scale(1.02);
+}
+
+/* Miniature : le vrai gabarit, rendu puis réduit */
+.ck-mini {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-8);
+  padding: var(--ck-space-10);
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-md);
+  background: var(--ck-surface);
+  cursor: grab;
+  user-select: none;
+  transition:
+    border-color var(--ck-dur-2) var(--ck-ease-out),
+    box-shadow var(--ck-dur-2) var(--ck-ease-out),
+    transform var(--ck-dur-2) var(--ck-ease-out),
+    opacity var(--ck-dur-2) var(--ck-ease-out);
+}
+
+.ck-mini:hover {
+  border-color: var(--ck-accent-line);
+  box-shadow: var(--ck-shadow-md);
+  transform: translateY(-1px);
+}
+
+.ck-mini:active {
+  cursor: grabbing;
+}
+
+.ck-mini__head,
+.ck-mini__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ck-space-6);
+  min-width: 0;
+}
+
+.ck-mini__name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ck-mini__title {
+  overflow: hidden;
+  color: var(--ck-ink-1);
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+  font-weight: var(--ck-weight-semibold);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ck-mini__cat {
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-11);
+  line-height: 14px;
+}
+
+.ck-mini__preview {
+  position: relative;
+  height: var(--mini-h, 84px);
+  border: var(--ck-border-soft);
+  border-radius: var(--ck-radius-sm);
+  background: var(--ck-canvas);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ck-mini__scaler {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  width: var(--mini-w, 400px);
+  height: var(--mini-hh, 200px);
+  transform: scale(var(--mini-scale, 0.4));
+  transform-origin: top left;
+}
+
+.ck-mini__scaler > .ck-widget {
+  flex: 1;
+}
+
+.ck-mini__hint {
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-11);
+}
+
+.ck-mini__placed {
+  display: none;
+}
+
+.ck-mini.is-placed {
+  border-style: dashed;
+  opacity: 0.72;
+}
+
+.ck-mini.is-placed:hover {
+  opacity: 1;
+  transform: none;
+}
+
+.ck-mini.is-placed .ck-mini__placed {
+  display: inline-flex;
+}
+
+.ck-mini.is-placed .ck-mini__add {
+  display: none;
+}
+
+.ck-mini {
+  container-type: inline-size;
+}
+
+@container (max-width: 200px) {
+  .ck-mini__hint {
+    display: none;
+  }
+}
+
+/* Chargement d'un widget (htmx) : on garde le cadre, contenu atténué */
+.ck-widget.is-loading .ck-widget__body {
+  opacity: 0.5;
+  transition: opacity var(--ck-dur-2) var(--ck-ease-out);
+}

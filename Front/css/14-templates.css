@@ -1,0 +1,466 @@
+/* ==========================================================================
+   Cockpit DS — 14 · Gabarits de widgets
+   Ajustements propres à chaque gabarit (js/widgets.js), pilotés par la taille
+   réelle du widget : container queries sur .ck-widget__body (nom « ck-w »).
+   Les modes compacts sont en fin de fichier : à spécificité égale, ils
+   priment ainsi sur les règles de gabarit.
+   ========================================================================== */
+
+/* Indicateur ---------------------------------------------------------------- */
+.ck-w--kpi .ck-kpi {
+  flex: 1;
+  min-height: 0;
+}
+
+.ck-w--kpi .ck-kpi__value {
+  font-size: clamp(20px, 12cqh + 10px, 40px);
+}
+
+.ck-w--kpi-hero .ck-kpi__value {
+  font-size: clamp(28px, 22cqh + 6px, 56px);
+  letter-spacing: -0.04em;
+}
+
+.ck-kpi__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: end;
+  gap: var(--ck-space-8) var(--ck-space-16);
+  min-width: 0;
+}
+
+.ck-kpi__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-4);
+  min-width: 0;
+}
+
+@container ck-w (min-width: 330px) {
+  .ck-w--kpi .ck-kpi__body {
+    grid-template-columns: minmax(0, auto) minmax(72px, 1fr);
+  }
+}
+
+@container ck-w (max-height: 118px) {
+  .ck-w--kpi .ck-kpi {
+    gap: var(--ck-space-4);
+    padding: var(--ck-space-10) var(--ck-inset-sm);
+  }
+}
+
+@container ck-w (max-height: 118px) and (max-width: 329px) {
+  .ck-w--kpi .ck-kpi__spark {
+    display: none;
+  }
+}
+
+@container ck-w (min-height: 200px) {
+  .ck-w--kpi .ck-kpi__spark {
+    height: 56px;
+  }
+}
+
+/* En-têtes compacts dans les petites cellules */
+@container ck-w (max-height: 240px) {
+  .ck-w > .ck-card__header {
+    min-height: 44px;
+    padding-top: var(--ck-space-8);
+    padding-bottom: var(--ck-space-8);
+  }
+}
+
+@container ck-w (max-width: 300px) {
+  .ck-w > .ck-card__header,
+  .ck-w > .ck-card__body,
+  .ck-w > .ck-card__footer {
+    padding-right: var(--ck-inset-sm);
+    padding-left: var(--ck-inset-sm);
+  }
+
+  .ck-w .ck-card__subtitle {
+    display: none;
+  }
+}
+
+/* Bannière vitrine ---------------------------------------------------------- */
+.ck-w--hero > .ck-card__body {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ck-space-12) var(--ck-space-24);
+}
+
+.ck-hero__id {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-12);
+  min-width: 0;
+}
+
+.ck-hero__mark {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--ck-radius-md);
+  background: var(--ck-accent-soft);
+  color: var(--ck-accent);
+  box-shadow: inset 0 0 0 1px var(--ck-accent-100);
+}
+
+.ck-hero__mark .ck-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.ck-hero__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-4);
+  min-width: 0;
+}
+
+.ck-hero__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ck-space-8);
+  color: var(--ck-ink-1);
+  font-size: clamp(16px, 8cqh + 8px, 22px);
+  line-height: 1.2;
+  font-weight: var(--ck-weight-semibold);
+  letter-spacing: -0.02em;
+}
+
+.ck-hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ck-space-8);
+  min-width: 0;
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-12);
+}
+
+.ck-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ck-gap-sm);
+}
+
+@container ck-w (max-width: 420px) {
+  .ck-w--hero .ck-hero__mark {
+    display: none;
+  }
+}
+
+/* Raccourcis ----------------------------------------------------------------- */
+.ck-w__actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  align-content: center;
+  gap: var(--ck-gap-sm);
+  height: 100%;
+}
+
+.ck-w__actions .ck-btn {
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.ck-w__actions .ck-btn > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@container ck-w (max-width: 230px) {
+  .ck-w__actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ck-w__actions .ck-btn {
+    justify-content: center;
+    padding: 0;
+  }
+
+  /* Libellé masqué visuellement : il reste le nom accessible du bouton */
+  .ck-w__actions .ck-btn > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* Graphiques ----------------------------------------------------------------- */
+.ck-w--chart > .ck-card__body {
+  padding-top: var(--ck-space-12);
+}
+
+.ck-w--chart .ck-chart__plot {
+  --ck-chart-h: 60px;
+}
+
+/* Jauges, disponibilité, anneau --------------------------------------------- */
+.ck-w--gauges > .ck-card__body,
+.ck-w--uptime > .ck-card__body {
+  justify-content: center;
+}
+
+.ck-w--donut > .ck-card__body {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--ck-space-16);
+}
+
+.ck-w--donut .ck-donut {
+  --size: min(128px, 62cqh);
+}
+
+.ck-w--donut .ck-legend {
+  flex: 1;
+  min-width: 0;
+}
+
+@container ck-w (max-width: 300px) {
+  .ck-w--donut .ck-legend {
+    display: none;
+  }
+
+  .ck-w--donut > .ck-card__body {
+    justify-content: center;
+  }
+}
+
+/* Message / annonce ---------------------------------------------------------- */
+.ck-w--note {
+  --n-bg: var(--ck-accent-soft);
+  --n-ic: var(--ck-accent);
+}
+
+.ck-w--note[data-tone="good"] { --n-bg: var(--ck-good-soft); --n-ic: var(--ck-good-ink); }
+.ck-w--note[data-tone="warn"] { --n-bg: var(--ck-warn-soft); --n-ic: var(--ck-warn-ink); }
+.ck-w--note[data-tone="danger"] { --n-bg: var(--ck-danger-soft); --n-ic: var(--ck-danger-ink); }
+
+.ck-w--note > .ck-card__body {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--ck-space-12);
+  background: var(--n-bg);
+}
+
+.ck-note__icon {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  color: var(--n-ic);
+}
+
+.ck-note__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ck-space-4);
+  min-width: 0;
+}
+
+.ck-note__title {
+  color: var(--ck-ink-1);
+  font-size: var(--ck-text-13);
+  line-height: 20px;
+  font-weight: var(--ck-weight-semibold);
+}
+
+.ck-note__text {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--ck-ink-2);
+  font-size: var(--ck-text-12);
+  line-height: 18px;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+/* QR code ------------------------------------------------------------------- */
+.ck-w--qr > .ck-card__body {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--ck-space-16);
+}
+
+.ck-w--qr .ck-qr {
+  --qr-size: clamp(64px, 42cqh, 112px);
+}
+
+.ck-qr-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-8);
+  min-width: 0;
+}
+
+.ck-qr-info__url {
+  overflow-wrap: anywhere;
+  color: var(--ck-accent-ink);
+  font-family: var(--ck-font-mono);
+  font-stretch: var(--ck-mono-stretch);
+  font-size: var(--ck-text-12);
+  font-weight: var(--ck-weight-medium);
+}
+
+@container ck-w (max-width: 300px) {
+  .ck-w--qr .ck-qr-info__hint {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   Modes compacts — cellules basses (grille à 6 colonnes sous ~1300px,
+   widgets d'une seule rangée). Toujours en dernier, du plus haut au plus bas.
+   ========================================================================== */
+/* Graphiques bas : la légende reste (identité des séries), le bouton tableau se retire */
+@container ck-w (max-height: 260px) {
+  .ck-w .ck-chart {
+    gap: var(--ck-space-6);
+  }
+
+  .ck-w .ck-chart__head > .ck-btn {
+    display: none;
+  }
+
+  .ck-w .ck-chart__head:not(:has(.ck-legend)) {
+    display: none;
+  }
+
+  .ck-w--chart > .ck-card__body {
+    padding-top: var(--ck-space-8);
+    padding-bottom: var(--ck-space-10);
+  }
+}
+
+@container ck-w (max-height: 120px) {
+  .ck-w > .ck-card__header {
+    min-height: 36px;
+    padding-top: var(--ck-space-6);
+    padding-bottom: var(--ck-space-6);
+    border-bottom: 0;
+  }
+
+  .ck-w .ck-card__subtitle,
+  .ck-w--gauges > .ck-card__header,
+  .ck-w--stats > .ck-card__header {
+    display: none;
+  }
+
+  .ck-w--gauges > .ck-card__body,
+  .ck-w--stats > .ck-card__body {
+    padding-top: var(--ck-space-8);
+    padding-bottom: var(--ck-space-8);
+  }
+
+  .ck-w--uptime > .ck-card__body {
+    padding-top: 0;
+    padding-bottom: var(--ck-space-10);
+  }
+
+  .ck-w--uptime .ck-uptime__axis {
+    display: none;
+  }
+
+  .ck-w--uptime .ck-uptime__bars {
+    height: 20px;
+  }
+
+  /* Mesures sur une seule ligne, défilement horizontal si nécessaire */
+  .ck-w--stats .ck-stats {
+    grid-template-columns: none;
+    grid-auto-columns: minmax(96px, 1fr);
+    grid-auto-flow: column;
+    overflow-x: auto;
+  }
+
+  .ck-w--gauges .ck-gauges {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+  }
+}
+
+/* Raccourcis : deux rangées de boutons tiennent dès 78px avec un retrait de 8px */
+@container ck-w (max-height: 100px) {
+  .ck-w--actions > .ck-card__body {
+    padding: var(--ck-space-8);
+  }
+}
+
+@container ck-w (max-height: 84px) {
+  .ck-w--kpi .ck-kpi {
+    justify-content: center;
+    gap: var(--ck-space-2);
+    padding: var(--ck-space-8) var(--ck-inset-sm);
+  }
+
+  .ck-w--kpi .ck-kpi__foot,
+  .ck-w--kpi .ck-kpi__spark {
+    display: none;
+  }
+
+  .ck-w--hero > .ck-card__body {
+    padding: var(--ck-space-8) var(--ck-inset-sm);
+  }
+
+  .ck-w--hero .ck-hero__mark {
+    width: 32px;
+    height: 32px;
+  }
+
+  .ck-w--hero .ck-hero__meta {
+    display: none;
+  }
+}
+
+/* Raccourcis sur une seule rangée ; icônes seules si la largeur manque */
+@container ck-w (max-height: 76px) {
+  .ck-w__actions {
+    grid-template-columns: none;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+  }
+}
+
+@container ck-w (max-height: 76px) and (max-width: 520px) {
+  .ck-w__actions .ck-btn {
+    justify-content: center;
+    padding: 0;
+  }
+
+  /* Libellé masqué visuellement : il reste le nom accessible du bouton */
+  .ck-w__actions .ck-btn > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* Rangée minimale (6 colonnes vers 760px) : libellé + valeur, rien d’autre */
+@container ck-w (max-height: 64px) {
+  .ck-w--kpi .ck-kpi {
+    gap: 0;
+    padding: var(--ck-space-6) var(--ck-inset-sm);
+  }
+
+  .ck-w--kpi .ck-kpi__icon {
+    display: none;
+  }
+
+  .ck-w--kpi .ck-kpi__value {
+    font-size: clamp(16px, 40cqh, 24px);
+  }
+}

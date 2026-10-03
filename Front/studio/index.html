@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <title>Studio · 29th studio</title>
+    <meta name="description" content="Studio d'édition visuelle : modifiez textes et images de votre vitrine en direct, puis publiez.">
+    <!-- @include head.html -->
+    <link rel="stylesheet" href="/css/16-studio.css?v={{v}}">
+  </head>
+  <body>
+    <!-- @include body-start.html brand="Studio" -->
+
+    <div class="ck-studio" id="main" tabindex="-1">
+      <div class="ck-omnibar">
+        <div class="ck-omnibar__start">
+          <a href="/" class="ck-btn ck-btn--ghost ck-btn--xs" id="studio-back">
+            <svg class="ck-icon" aria-hidden="true"><use href="#i-chevron-left"/></svg><span>Retour</span>
+          </a>
+          <span class="ck-omnibar__sep" aria-hidden="true"></span>
+          <h1 class="ck-omnibar__title"><span id="studio-name">Studio</span><span class="ck-tag" data-tone="accent">Studio</span></h1>
+        </div>
+
+        <div class="ck-omnibar__center">
+          <div class="ck-dropdown">
+            <button type="button" class="ck-btn ck-btn--secondary ck-btn--xs ck-studio__page-btn" id="studio-page-btn"
+                    data-ck-menu="studio-page-menu" aria-haspopup="menu" aria-expanded="false">
+              <svg class="ck-icon" aria-hidden="true"><use href="#i-file-text"/></svg>
+              <span class="ck-studio__page-name" id="studio-page-name">Page</span>
+              <svg class="ck-icon" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+            </button>
+            <div class="ck-menu ck-menu--start ck-studio__page-menu" id="studio-page-menu" role="menu" aria-label="Pages du site" hidden></div>
+          </div>
+          <div class="ck-segmented ck-segmented--sm" data-ck-segmented role="group" aria-label="Format d'aperçu" id="studio-devices">
+            <button type="button" class="ck-segmented__item" data-value="desktop" aria-pressed="true" title="Bureau"><svg class="ck-icon" aria-hidden="true"><use href="#i-monitor"/></svg><span class="ck-sr-only">Bureau</span></button>
+            <button type="button" class="ck-segmented__item" data-value="tablet" aria-pressed="false" title="Tablette"><svg class="ck-icon" aria-hidden="true"><use href="#i-tablet"/></svg><span class="ck-sr-only">Tablette</span></button>
+            <button type="button" class="ck-segmented__item" data-value="mobile" aria-pressed="false" title="Mobile"><svg class="ck-icon" aria-hidden="true"><use href="#i-smartphone"/></svg><span class="ck-sr-only">Mobile</span></button>
+          </div>
+          <span class="ck-live ck-live--sm is-idle ck-hide-sm" id="studio-live" title="Visiteurs actuellement sur ce site"><span class="ck-live__dot"></span><span id="studio-live-text">0 en direct</span></span>
+        </div>
+
+        <div class="ck-omnibar__end">
+          <div class="ck-segmented ck-segmented--sm" data-ck-segmented role="group" aria-label="Mode de l'aperçu" id="studio-mode">
+            <button type="button" class="ck-segmented__item" data-value="edit" aria-pressed="true" title="Double-cliquez sur un texte pour le modifier"><svg class="ck-icon" aria-hidden="true"><use href="#i-pencil"/></svg>Édition</button>
+            <button type="button" class="ck-segmented__item" data-value="preview" aria-pressed="false" title="Naviguer comme un visiteur (menus, liens, onglets)"><svg class="ck-icon" aria-hidden="true"><use href="#i-eye"/></svg>Aperçu</button>
+          </div>
+          <span class="ck-omnibar__sep" aria-hidden="true"></span>
+          <button type="button" class="ck-btn ck-btn--ghost ck-btn--xs ck-btn--icon" id="btn-undo" aria-label="Annuler (Ctrl+Z)" title="Annuler (Ctrl+Z)" disabled>
+            <svg class="ck-icon" aria-hidden="true"><use href="#i-undo"/></svg>
+          </button>
+          <button type="button" class="ck-btn ck-btn--ghost ck-btn--xs ck-btn--icon" id="btn-redo" aria-label="Rétablir (Ctrl+Y)" title="Rétablir (Ctrl+Y)" disabled>
+            <svg class="ck-icon" aria-hidden="true"><use href="#i-redo"/></svg>
+          </button>
+          <button type="button" class="ck-btn ck-btn--ghost ck-btn--xs" id="btn-panel" aria-pressed="false" aria-controls="studio-panel">
+            <svg class="ck-icon" aria-hidden="true"><use href="#i-list"/></svg><span>Contenu</span>
+          </button>
+          <button type="button" class="ck-btn ck-btn--ghost ck-btn--xs ck-btn--icon" id="btn-reload" aria-label="Recharger l'aperçu" title="Recharger l'aperçu">
+            <svg class="ck-icon" aria-hidden="true"><use href="#i-refresh"/></svg>
+          </button>
+          <a href="#" target="_blank" rel="noopener noreferrer" class="ck-btn ck-btn--ghost ck-btn--xs ck-btn--icon" id="btn-open" aria-label="Ouvrir la vitrine dans un nouvel onglet" title="Ouvrir la vitrine dans un nouvel onglet">
+            <svg class="ck-icon" aria-hidden="true"><use href="#i-external"/></svg>
+          </a>
+          <div class="ck-dropdown">
+            <button type="button" class="ck-btn ck-btn--ghost ck-btn--xs ck-btn--icon" id="btn-more" data-ck-menu="studio-more-menu"
+                    aria-haspopup="menu" aria-expanded="false" aria-label="Plus d'options" title="Plus d'options">
+              <svg class="ck-icon" aria-hidden="true"><use href="#i-more"/></svg>
+            </button>
+            <div class="ck-menu" id="studio-more-menu" role="menu" aria-label="Options du Studio" hidden>
+              <span class="ck-menu__label">Assombrir la page pendant la saisie</span>
+              <button type="button" class="ck-menu__item" role="menuitemradio" aria-checked="true" data-focus-style="subtle">
+                <svg class="ck-icon" aria-hidden="true"><use href="#i-eye"/></svg><span>Subtil</span><span class="ck-menu__meta">voile léger</span>
+              </button>
+              <button type="button" class="ck-menu__item" role="menuitemradio" aria-checked="false" data-focus-style="strong">
+                <svg class="ck-icon" aria-hidden="true"><use href="#i-sparkle"/></svg><span>Marqué</span><span class="ck-menu__meta">voile + flou</span>
+              </button>
+              <div class="ck-menu__sep" role="separator"></div>
+              <button type="button" class="ck-menu__item" role="menuitem" id="btn-shortcuts">
+                <svg class="ck-icon" aria-hidden="true"><use href="#i-key"/></svg><span>Raccourcis clavier</span>
+              </button>
+            </div>
+          </div>
+          <button type="button" class="ck-btn ck-btn--primary ck-btn--xs" id="btn-save" title="Enregistrer et publier (Ctrl+S)" disabled>
+            <svg class="ck-icon" aria-hidden="true"><use href="#i-rocket"/></svg><span>Publier</span><span class="ck-studio__save-count" id="btn-save-count" hidden></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="ck-studio__body">
+        <div class="ck-canvas">
+          <div class="ck-studio__banner" id="studio-banner" hidden></div>
+          <div class="ck-device" id="studio-frame-wrapper" data-device="desktop">
+            <!-- @include skeleton/preview.html -->
+          </div>
+          <div class="ck-studio__veil" id="studio-veil" role="status" hidden>
+            <span class="ck-spinner ck-spinner--lg" aria-hidden="true"></span>
+            <p class="ck-text-strong">Redémarrage de la vitrine…</p>
+            <p class="ck-text-caption">Le contenu publié sera visible dans quelques secondes.</p>
+          </div>
+          <div class="ck-studio__hint" id="studio-hint" role="note" hidden>
+            <svg class="ck-icon" aria-hidden="true"><use href="#i-sparkle"/></svg>
+            <span><strong>Double-cliquez</strong> sur un texte pour le modifier · <strong>Ctrl+clic</strong> pour suivre un lien</span>
+            <button type="button" class="ck-btn ck-btn--ghost ck-btn--xs ck-btn--icon" id="studio-hint-close" aria-label="Masquer l'astuce" title="Masquer l'astuce">
+              <svg class="ck-icon" aria-hidden="true"><use href="#i-x"/></svg>
+            </button>
+          </div>
+          <div class="ck-studio__pending" id="studio-pending" data-tone="accent" hidden>
+            <span class="ck-studio__pending-dot" aria-hidden="true"></span>
+            <span id="studio-pending-text">0 modification</span>
+            <button type="button" class="ck-btn ck-btn--ghost ck-btn--xs" id="btn-review">Revoir</button>
+            <button type="button" class="ck-btn ck-btn--primary ck-btn--xs" id="btn-save-pill">Publier</button>
+          </div>
+        </div>
+
+        <aside class="ck-studio__panel" id="studio-panel" aria-label="Contenu éditable" hidden>
+          <div class="ck-studio__panel-head">
+            <div class="ck-spread">
+              <strong class="ck-text-strong">Contenu</strong>
+              <span class="ck-count" id="studio-count">0</span>
+            </div>
+            <div class="ck-segmented ck-segmented--sm ck-studio__filter" data-ck-segmented role="group" aria-label="Éléments affichés" id="studio-filter">
+              <button type="button" class="ck-segmented__item" data-value="page" aria-pressed="true">Cette page</button>
+              <button type="button" class="ck-segmented__item" data-value="all" aria-pressed="false">Tout le site</button>
+              <button type="button" class="ck-segmented__item" data-value="dirty" aria-pressed="false">Modifiés</button>
+            </div>
+            <label class="ck-search">
+              <svg class="ck-icon" aria-hidden="true"><use href="#i-search"/></svg>
+              <input type="search" class="ck-input" id="studio-search" placeholder="Rechercher un texte…" aria-label="Rechercher un élément" autocomplete="off">
+            </label>
+          </div>
+          <div class="ck-studio__items" id="studio-items"></div>
+        </aside>
+      </div>
+    </div>
+
+    <div id="modal-container"></div>
+
+    <!-- @include scripts.html -->
+    <script src="/js/studio/studio-model.js?v={{v}}"></script>
+    <script src="/js/studio/studio-frame.js?v={{v}}"></script>
+    <script src="/js/studio/studio-ui.js?v={{v}}"></script>
+    <script src="/js/studio/studio.js?v={{v}}"></script>
+  </body>
+</html>

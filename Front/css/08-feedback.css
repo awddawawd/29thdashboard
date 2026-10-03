@@ -1,0 +1,396 @@
+/* ==========================================================================
+   Cockpit DS — 08 · Retour utilisateur
+   Alertes (bannières), toasts, états vides, squelettes et chargement.
+   Toast clair unique : remplace les trois définitions sombres de
+   l'existant (CSS, TOAST_CSS, styles JS en ligne).
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Alerte / bannière
+   -------------------------------------------------------------------------- */
+.ck-alert {
+  --a-bg: var(--ck-surface-2);
+  --a-bd: var(--ck-line);
+  --a-ic: var(--ck-ink-3);
+
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ck-space-12);
+  padding: var(--ck-space-12) var(--ck-inset);
+  border: 1px solid var(--a-bd);
+  border-radius: var(--ck-radius-md);
+  background: var(--a-bg);
+}
+
+.ck-alert__icon {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  color: var(--a-ic);
+}
+
+.ck-alert__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ck-space-2);
+  min-width: 0;
+}
+
+.ck-alert__title {
+  color: var(--ck-ink-1);
+  font-size: var(--ck-text-13);
+  line-height: 20px;
+  font-weight: var(--ck-weight-semibold);
+}
+
+.ck-alert__text {
+  color: var(--ck-ink-2);
+  font-size: var(--ck-text-13);
+  line-height: 20px;
+}
+
+.ck-alert__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-self: center;
+  flex-shrink: 0;
+  gap: var(--ck-gap-sm);
+}
+
+[data-tone="info"].ck-alert,
+[data-tone="accent"].ck-alert { --a-bg: var(--ck-info-soft); --a-bd: var(--ck-info-line); --a-ic: var(--ck-info); }
+[data-tone="good"].ck-alert { --a-bg: var(--ck-good-soft); --a-bd: var(--ck-good-line); --a-ic: var(--ck-good-ink); }
+[data-tone="warn"].ck-alert { --a-bg: var(--ck-warn-soft); --a-bd: var(--ck-warn-line); --a-ic: var(--ck-warn-ink); }
+[data-tone="danger"].ck-alert { --a-bg: var(--ck-danger-soft); --a-bd: var(--ck-danger-line); --a-ic: var(--ck-danger); }
+
+/* Variante « barre » : fond blanc, filet de ton à gauche (échéance à régler…) */
+.ck-alert.ck-alert--bar {
+  --a-bg: var(--ck-surface);
+  --a-bd: var(--ck-line);
+  box-shadow: inset 3px 0 0 var(--a-ic), var(--ck-shadow-xs);
+}
+
+/* Variante compacte (dans un formulaire ou un dialogue) */
+.ck-alert--inline {
+  gap: var(--ck-space-8);
+  padding: var(--ck-space-8) var(--ck-space-12);
+  border-radius: var(--ck-radius-sm);
+}
+
+.ck-alert--inline .ck-alert__title,
+.ck-alert--inline .ck-alert__text {
+  font-size: var(--ck-text-12);
+  line-height: 18px;
+}
+
+.ck-alert--inline .ck-alert__icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* --------------------------------------------------------------------------
+   Toasts — clairs, empilés en bas à droite, pause au survol
+   -------------------------------------------------------------------------- */
+.ck-toast-region {
+  position: fixed;
+  right: var(--ck-space-24);
+  bottom: var(--ck-space-24);
+  z-index: var(--ck-z-toast);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--ck-space-8);
+  width: min(380px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.ck-toast {
+  --t-ic-bg: var(--ck-info-soft);
+  --t-ic-fg: var(--ck-info-ink);
+  --t-bar: var(--ck-info);
+
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ck-space-12);
+  width: 100%;
+  padding: var(--ck-space-12) var(--ck-space-12) var(--ck-space-12) var(--ck-space-12);
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-md);
+  background: var(--ck-surface);
+  box-shadow: var(--ck-shadow-lg);
+  pointer-events: auto;
+  overflow: hidden;
+  animation: ck-toast-in var(--ck-dur-3) var(--ck-ease-out) both;
+}
+
+.ck-toast__icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--t-ic-bg);
+  color: var(--t-ic-fg);
+}
+
+.ck-toast__icon .ck-icon {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2;
+}
+
+.ck-toast__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ck-space-2);
+  min-width: 0;
+  padding-top: var(--ck-space-4);
+}
+
+.ck-toast__title {
+  color: var(--ck-ink-1);
+  font-size: var(--ck-text-13);
+  line-height: 18px;
+  font-weight: var(--ck-weight-semibold);
+}
+
+.ck-toast__text {
+  color: var(--ck-ink-2);
+  font-size: var(--ck-text-12);
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+
+.ck-toast__close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--ck-radius-sm);
+  color: var(--ck-ink-3);
+  transition:
+    background-color var(--ck-dur-1) var(--ck-ease-out),
+    color var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-toast__close:hover {
+  background: var(--ck-surface-3);
+  color: var(--ck-ink-1);
+}
+
+.ck-toast__close .ck-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Minuterie — un décompte est linéaire par nature (seule exception avec les spinners) */
+.ck-toast__timer {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--ck-surface-3);
+}
+
+.ck-toast__timer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--t-bar);
+  transform-origin: left;
+  animation: ck-toast-timer var(--t-duration, 4200ms) linear forwards;
+}
+
+.ck-toast.is-paused .ck-toast__timer::after {
+  animation-play-state: paused;
+}
+
+.ck-toast.is-leaving {
+  animation: ck-toast-out var(--ck-dur-2) var(--ck-ease-in-out) forwards;
+}
+
+[data-tone="good"].ck-toast { --t-ic-bg: var(--ck-good-soft); --t-ic-fg: var(--ck-good-ink); --t-bar: var(--ck-good); }
+[data-tone="warn"].ck-toast { --t-ic-bg: var(--ck-warn-soft); --t-ic-fg: var(--ck-warn-ink); --t-bar: var(--ck-warn); }
+[data-tone="danger"].ck-toast { --t-ic-bg: var(--ck-danger-soft); --t-ic-fg: var(--ck-danger-ink); --t-bar: var(--ck-danger); }
+
+@keyframes ck-toast-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes ck-toast-out {
+  to { opacity: 0; transform: translateX(16px); }
+}
+
+@keyframes ck-toast-timer {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+@media (max-width: 640px) {
+  .ck-toast-region {
+    right: var(--ck-space-16);
+    bottom: var(--ck-space-16);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   État vide
+   -------------------------------------------------------------------------- */
+.ck-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ck-space-4);
+  padding: var(--ck-space-48) var(--ck-space-24);
+  text-align: center;
+}
+
+.ck-empty__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: var(--ck-space-12);
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-md);
+  background: var(--ck-surface);
+  color: var(--ck-ink-3);
+  box-shadow: var(--ck-shadow-sm), 0 0 0 6px var(--ck-surface-2);
+}
+
+.ck-empty__icon .ck-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.ck-empty__title {
+  font-size: var(--ck-text-14);
+  line-height: 20px;
+  font-weight: var(--ck-weight-semibold);
+  color: var(--ck-ink-1);
+}
+
+.ck-empty__desc {
+  max-width: 44ch;
+  font-size: var(--ck-text-13);
+  line-height: 20px;
+  color: var(--ck-ink-3);
+}
+
+.ck-empty__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--ck-gap-sm);
+  margin-top: var(--ck-space-16);
+}
+
+.ck-empty--sm {
+  padding: var(--ck-space-24) var(--ck-space-16);
+}
+
+.ck-empty--sm .ck-empty__icon {
+  width: 36px;
+  height: 36px;
+  margin-bottom: var(--ck-space-8);
+}
+
+/* --------------------------------------------------------------------------
+   Squelettes de chargement
+   Brique de base posée **dans le HTML de la page** : elle est peinte au premier
+   rendu (aucun écran intermédiaire, aucun scintillement) puis remplacée en
+   place, dans son conteneur, dès la réception des données (App.boot).
+   Les compositions (tableau, graphique, messagerie) vivent dans 15-app.css.
+   -------------------------------------------------------------------------- */
+.ck-skeleton {
+  display: block;
+  height: 12px;
+  border-radius: var(--ck-radius-xs);
+  background: linear-gradient(90deg, var(--ck-surface-3) 0%, var(--ck-surface-2) 40%, var(--ck-surface-3) 80%);
+  background-size: 300% 100%;
+  animation: ck-shimmer 1.6s var(--ck-ease-in-out) infinite;
+}
+
+/* Formes : chaque variante épouse la boîte qu'elle remplace (hauteur de ligne,
+   valeur de KPI, pastille, icône) pour que le contenu réel n'ait rien à déplacer. */
+.ck-skeleton--text { height: 12px; margin: 2px 0; }        /* occupe exactement une ligne de 16px */
+.ck-skeleton--title { height: 16px; margin: 1px 0; }       /* titre de carte, libellé d'une ligne */
+.ck-skeleton--figure { height: 28px; border-radius: var(--ck-radius-sm); }
+.ck-skeleton--block { min-height: 64px; border-radius: var(--ck-radius-sm); }
+.ck-skeleton--circle { width: 28px; height: 28px; border-radius: 50%; }
+.ck-skeleton--square { width: 32px; height: 32px; border-radius: var(--ck-radius-sm); }
+.ck-skeleton--icon { width: var(--ck-icon-md); height: var(--ck-icon-md); }
+.ck-skeleton--pill { width: 68px; height: 20px; border-radius: var(--ck-radius-pill); }
+.ck-skeleton--end { margin-left: auto; }
+
+/* Largeurs — échelle de 5 % (déclarées après les formes : elles l'emportent
+   toujours sur la largeur d'une forme). */
+.ck-skeleton--w15 { width: 15%; }
+.ck-skeleton--w20 { width: 20%; }
+.ck-skeleton--w25 { width: 25%; }
+.ck-skeleton--w30 { width: 30%; }
+.ck-skeleton--w35 { width: 35%; }
+.ck-skeleton--w40 { width: 40%; }
+.ck-skeleton--w45 { width: 45%; }
+.ck-skeleton--w50 { width: 50%; }
+.ck-skeleton--w55 { width: 55%; }
+.ck-skeleton--w60 { width: 60%; }
+.ck-skeleton--w65 { width: 65%; }
+.ck-skeleton--w70 { width: 70%; }
+.ck-skeleton--w75 { width: 75%; }
+.ck-skeleton--w80 { width: 80%; }
+.ck-skeleton--w85 { width: 85%; }
+.ck-skeleton--w90 { width: 90%; }
+.ck-skeleton--w100 { width: 100%; }
+
+/* Mouvement réduit : un aplat stable remplace le défilement du dégradé. */
+@media (prefers-reduced-motion: reduce) {
+  .ck-skeleton {
+    animation: none;
+    background: var(--ck-surface-3);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Chargement
+   -------------------------------------------------------------------------- */
+.ck-spinner {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border: 2px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: ck-spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+
+.ck-spinner--lg {
+  width: 20px;
+  height: 20px;
+}
+
+.ck-busy {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ck-space-8);
+  height: var(--ck-h-sm);
+  padding: 0 var(--ck-space-10);
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-sm);
+  background: var(--ck-surface-2);
+  color: var(--ck-ink-2);
+  font-size: var(--ck-text-12);
+  font-weight: var(--ck-weight-semibold);
+  white-space: nowrap;
+}

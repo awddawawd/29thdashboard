@@ -1,0 +1,634 @@
+/* ==========================================================================
+   Cockpit DS — 03 · Layout
+   Shell applicatif : cadre à 7 colonnes (sidebar = 1 colonne de la grille
+   de widgets), topbar alignée sur le bloc marque, zone de contenu.
+   ========================================================================== */
+
+.ck-app {
+  display: grid;
+  /* Sidebar = exactement 1 colonne de la grille de widgets (cadre à 7 colonnes).
+     La grille déborde de sa marge (6px) de chaque côté pour que le bord visible
+     des widgets tombe sur --ck-page-x : d'où le « + 2 × marge ». */
+  grid-template-columns:
+    calc((100% - var(--ck-page-x) * 2 - var(--ck-scrollbar-w) + var(--ck-grid-margin) * 2) / var(--ck-frame-cols))
+    minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--ck-canvas);
+}
+
+/* --------------------------------------------------------------------------
+   Sidebar
+   -------------------------------------------------------------------------- */
+.ck-sidebar {
+  position: relative;
+  z-index: var(--ck-z-sidebar);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--ck-space-12) var(--ck-space-12);
+  background: var(--ck-surface);
+  border-right: var(--ck-border);
+  overflow: hidden;
+}
+
+/* Bloc marque : même hauteur que la topbar → une seule ligne d'horizon */
+.ck-sidebar__brand {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: var(--ck-topbar-h);
+  margin: 0 calc(var(--ck-space-12) * -1);
+  padding: 0 var(--ck-space-16);
+  border-bottom: var(--ck-border);
+}
+
+.ck-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-10);
+  min-width: 0;
+  color: inherit;
+}
+
+.ck-brand:hover {
+  text-decoration: none;
+}
+
+.ck-brand__mark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: var(--ck-radius-sm);
+  background: var(--ck-accent);
+  color: var(--ck-on-accent);
+  box-shadow: var(--ck-shadow-primary);
+}
+
+.ck-brand__mark .ck-icon {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2;
+}
+
+.ck-brand__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ck-brand__title {
+  font-size: var(--ck-text-14);
+  line-height: 18px;
+  font-weight: var(--ck-weight-semibold);
+  letter-spacing: var(--ck-tracking-title);
+  color: var(--ck-ink-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ck-brand__sub {
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+  color: var(--ck-ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ck-sidebar__nav {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ck-space-16);
+  min-height: 0;
+  margin: 0 calc(var(--ck-space-6) * -1);
+  padding: var(--ck-space-16) var(--ck-space-6) var(--ck-space-12);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.ck-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-2);
+}
+
+.ck-nav-group__title {
+  padding: 0 var(--ck-space-8) var(--ck-space-4);
+  font-size: var(--ck-text-11);
+  line-height: 16px;
+  font-weight: var(--ck-weight-semibold);
+  letter-spacing: var(--ck-tracking-overline);
+  text-transform: uppercase;
+  color: var(--ck-ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ck-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-2);
+  list-style: none;
+}
+
+.ck-nav__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-10);
+  height: var(--ck-h-md);
+  padding: 0 var(--ck-space-8);
+  border-radius: var(--ck-radius-sm);
+  color: var(--ck-ink-2);
+  font-size: var(--ck-text-13);
+  font-weight: var(--ck-weight-medium);
+  white-space: nowrap;
+  transition:
+    background-color var(--ck-dur-1) var(--ck-ease-out),
+    color var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-nav__link:hover {
+  background: var(--ck-surface-3);
+  color: var(--ck-ink-1);
+  text-decoration: none;
+}
+
+.ck-nav__link:focus-visible {
+  outline-offset: 0;
+}
+
+.ck-nav__link.is-active,
+.ck-nav__link[aria-current="page"] {
+  background: var(--ck-accent-soft);
+  color: var(--ck-accent-ink);
+  font-weight: var(--ck-weight-semibold);
+  box-shadow: inset 0 0 0 1px var(--ck-accent-100);
+}
+
+.ck-nav__icon {
+  width: var(--ck-icon-md);
+  height: var(--ck-icon-md);
+  color: var(--ck-ink-3);
+  transition: color var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-nav__link:hover .ck-nav__icon {
+  color: var(--ck-ink-1);
+}
+
+.ck-nav__link.is-active .ck-nav__icon,
+.ck-nav__link[aria-current="page"] .ck-nav__icon {
+  color: var(--ck-accent);
+}
+
+.ck-nav__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ck-nav__link .ck-count {
+  margin-left: auto;
+}
+
+.ck-nav__link.is-active .ck-count,
+.ck-nav__link[aria-current="page"] .ck-count {
+  background: var(--ck-accent);
+  color: var(--ck-on-accent);
+}
+
+.ck-sidebar__footer {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: var(--ck-space-8);
+  padding-top: var(--ck-space-12);
+  border-top: var(--ck-border-soft);
+}
+
+/* Carte d'état (alertes, configuration) — ton via data-tone */
+.ck-status-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-2);
+  width: 100%;
+  padding: var(--ck-space-8) var(--ck-space-10);
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-sm);
+  background: var(--ck-surface);
+  color: var(--ck-ink-1);
+  text-align: left;
+  transition:
+    background-color var(--ck-dur-1) var(--ck-ease-out),
+    border-color var(--ck-dur-1) var(--ck-ease-out);
+}
+
+a.ck-status-card:hover,
+button.ck-status-card:hover {
+  border-color: var(--ck-line-strong);
+  background: var(--ck-surface-2);
+  text-decoration: none;
+}
+
+.ck-status-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-6);
+  min-width: 0;
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+  font-weight: var(--ck-weight-semibold);
+  color: var(--ck-ink-1);
+}
+
+.ck-status-card__dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--ck-ink-4);
+  box-shadow: 0 0 0 3px var(--ck-surface-3);
+}
+
+.ck-status-card__sub {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-6);
+  min-width: 0;
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+  color: var(--ck-ink-3);
+}
+
+.ck-status-card__sub .ck-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.ck-status-card[data-tone="good"] { background: var(--ck-good-soft); border-color: var(--ck-good-line); }
+.ck-status-card[data-tone="good"] .ck-status-card__dot { background: var(--ck-good); box-shadow: 0 0 0 3px var(--ck-good-line); }
+.ck-status-card[data-tone="good"] .ck-status-card__sub { color: var(--ck-good-ink); }
+.ck-status-card[data-tone="warn"] { background: var(--ck-warn-soft); border-color: var(--ck-warn-line); }
+.ck-status-card[data-tone="warn"] .ck-status-card__dot { background: var(--ck-warn); box-shadow: 0 0 0 3px var(--ck-warn-line); }
+.ck-status-card[data-tone="warn"] .ck-status-card__sub { color: var(--ck-warn-ink); }
+.ck-status-card[data-tone="danger"] { background: var(--ck-danger-soft); border-color: var(--ck-danger-line); }
+.ck-status-card[data-tone="danger"] .ck-status-card__dot { background: var(--ck-danger); box-shadow: 0 0 0 3px var(--ck-danger-line); }
+.ck-status-card[data-tone="danger"] .ck-status-card__sub { color: var(--ck-danger-ink); }
+.ck-status-card[data-tone="good"]:hover { background: color-mix(in srgb, var(--ck-good-soft) 65%, var(--ck-good-line)); border-color: var(--ck-good); }
+.ck-status-card[data-tone="warn"]:hover { background: color-mix(in srgb, var(--ck-warn-soft) 65%, var(--ck-warn-line)); border-color: var(--ck-warn); }
+.ck-status-card[data-tone="danger"]:hover { background: color-mix(in srgb, var(--ck-danger-soft) 65%, var(--ck-danger-line)); border-color: var(--ck-danger); }
+.ck-status-card.is-active,
+.ck-status-card[aria-current="page"] { border-color: var(--ck-accent-line); background: var(--ck-accent-soft); }
+
+/* Icône de tête (lien de configuration) : petite, à l’accent */
+.ck-status-card__head .ck-icon {
+  width: 12px;
+  height: 12px;
+  color: var(--ck-accent);
+}
+
+/* Horloge en direct */
+.ck-clock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ck-space-6);
+  height: var(--ck-h-xs);
+  padding: 0 var(--ck-space-10);
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-pill);
+  background: var(--ck-surface);
+  color: var(--ck-ink-3);
+  font-family: var(--ck-font-mono);
+  font-stretch: var(--ck-mono-stretch);
+  font-size: var(--ck-text-11);
+  font-variant-numeric: tabular-nums;
+}
+
+.ck-clock .ck-icon {
+  width: 12px;
+  height: 12px;
+  color: var(--ck-ink-4);
+}
+
+/* Carte utilisateur */
+.ck-user {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-8);
+  min-width: 0;
+  padding: var(--ck-space-6) var(--ck-space-6) var(--ck-space-6) var(--ck-space-8);
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-sm);
+  background: var(--ck-surface-2);
+}
+
+.ck-user__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ck-user__name {
+  overflow: hidden;
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+  font-weight: var(--ck-weight-semibold);
+  color: var(--ck-ink-1);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ck-user__role {
+  overflow: hidden;
+  font-size: var(--ck-text-11);
+  line-height: 14px;
+  color: var(--ck-ink-3);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* --------------------------------------------------------------------------
+   Zone principale & topbar
+   -------------------------------------------------------------------------- */
+.ck-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.ck-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ck-space-16);
+  flex-shrink: 0;
+  height: var(--ck-topbar-h);
+  padding: 0 var(--ck-page-x);
+  background: var(--ck-surface);
+  border-bottom: var(--ck-border);
+}
+
+.ck-topbar__start,
+.ck-topbar__end {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-gap-sm);
+  min-width: 0;
+}
+
+/* Le titre se tronque en premier, les actions ne sont jamais écrasées */
+.ck-topbar__start {
+  flex: 1;
+  gap: var(--ck-space-12);
+}
+
+.ck-topbar__end {
+  flex-shrink: 0;
+}
+
+/* Sélecteur de site à côté du titre (espace client) — double classe : .ck-select impose width: 100 % */
+.ck-topbar .ck-topbar__switch {
+  flex-shrink: 0;
+  width: 200px;
+}
+
+.ck-topbar__title {
+  overflow: hidden;
+  font-size: var(--ck-text-page);
+  line-height: 1.2;
+  font-weight: var(--ck-weight-semibold);
+  letter-spacing: -0.02em;
+  color: var(--ck-ink-1);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Double classe : .ck-btn (04-buttons) est chargé après et impose inline-flex */
+.ck-topbar .ck-topbar__menu {
+  display: none;
+}
+
+.ck-content {
+  flex: 1;
+  min-height: 0;
+  padding: var(--ck-page-y) var(--ck-page-x);
+  overflow-y: auto;
+  scroll-padding-top: var(--ck-space-24);
+}
+
+/* --------------------------------------------------------------------------
+   En-tête de page & sections
+   -------------------------------------------------------------------------- */
+.ck-page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ck-space-12);
+  margin-bottom: var(--ck-section-gap);
+}
+
+.ck-page-head__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-4);
+  min-width: 0;
+}
+
+.ck-page-head__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ck-space-10);
+  font-size: var(--ck-text-page);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.ck-page-head__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ck-space-8);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-12);
+}
+
+.ck-page-head__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ck-gap-sm);
+}
+
+.ck-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ck-space-4);
+  width: fit-content;
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-12);
+  font-weight: var(--ck-weight-medium);
+}
+
+.ck-back:hover {
+  color: var(--ck-ink-1);
+  text-decoration: none;
+}
+
+.ck-back .ck-icon {
+  width: 14px;
+  height: 14px;
+  transition: transform var(--ck-dur-2) var(--ck-ease-out);
+}
+
+.ck-back:hover .ck-icon {
+  transform: translateX(-2px);
+}
+
+.ck-section + .ck-section {
+  margin-top: var(--ck-section-gap);
+}
+
+.ck-section__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ck-space-12);
+  margin-bottom: var(--ck-gap);
+}
+
+.ck-section__title {
+  font-size: var(--ck-text-14);
+  line-height: 20px;
+}
+
+.ck-section__desc {
+  font-size: var(--ck-text-12);
+  color: var(--ck-ink-3);
+}
+
+/* --------------------------------------------------------------------------
+   Primitives de composition
+   -------------------------------------------------------------------------- */
+.ck-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-stack-gap, var(--ck-gap));
+}
+
+.ck-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ck-cluster-gap, var(--ck-gap-sm));
+}
+
+.ck-spread {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ck-gap);
+  min-width: 0;
+}
+
+.ck-auto-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--ck-min, 240px), 100%), 1fr));
+  gap: var(--ck-gap);
+}
+
+/* Rangée d'indicateurs : 4 KPI sur une ligne, repli automatique */
+.ck-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+  gap: var(--ck-gap);
+  margin-bottom: var(--ck-gap);
+}
+
+/* Dans une pile, l'espacement vient du gap */
+.ck-stack > .ck-kpi-row {
+  margin-bottom: 0;
+}
+
+/* En-tête de fiche dans une pile : gap + 12px = l'écart de section */
+.ck-stack > .ck-page-head {
+  margin-bottom: var(--ck-space-12);
+}
+
+/* Maître / détail (support, messagerie) */
+.ck-split {
+  display: grid;
+  grid-template-columns: minmax(280px, var(--ck-split-aside, 340px)) minmax(0, 1fr);
+  gap: var(--ck-gap);
+  align-items: stretch;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive — la sidebar devient un tiroir sous 1100px
+   -------------------------------------------------------------------------- */
+.ck-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--ck-z-sidebar) - 1);
+  background: rgba(15, 22, 35, 0.32);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--ck-dur-3) var(--ck-ease-out);
+}
+
+@media (max-width: 1100px) {
+  .ck-app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ck-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(300px, 86vw);
+    transform: translateX(-102%);
+    transition: transform var(--ck-dur-3) var(--ck-ease-out);
+    box-shadow: var(--ck-shadow-xl);
+  }
+
+  .ck-app.is-nav-open .ck-sidebar {
+    transform: none;
+  }
+
+  .ck-app.is-nav-open .ck-scrim {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .ck-topbar .ck-topbar__menu {
+    display: inline-flex;
+  }
+
+  .ck-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .ck-topbar {
+    gap: var(--ck-space-8);
+  }
+
+  .ck-hide-sm {
+    display: none !important;
+  }
+}

@@ -1,0 +1,638 @@
+/* ==========================================================================
+   Cockpit DS — 11 · Patterns métier
+   Messagerie support, console & logs (claire), reçu de paiement,
+   studio d'édition, écran de connexion.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Messagerie support : liste des conversations + fil + composeur
+   -------------------------------------------------------------------------- */
+.ck-inbox {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  gap: var(--ck-gap);
+  height: calc(100dvh - var(--ck-topbar-h) - var(--ck-page-y) * 2);
+  min-height: 520px;
+}
+
+.ck-inbox > .ck-card {
+  min-height: 0;
+}
+
+.ck-conv-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.ck-conv {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-4);
+  padding: var(--ck-space-12) var(--ck-inset);
+  border-bottom: var(--ck-border-soft);
+  color: inherit;
+  transition: background-color var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-conv:hover {
+  background: var(--ck-surface-2);
+  text-decoration: none;
+}
+
+.ck-conv.is-active,
+.ck-conv[aria-current="page"] {
+  background: var(--ck-accent-soft);
+  box-shadow: inset 2px 0 0 var(--ck-accent);
+}
+
+.ck-conv__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ck-space-8);
+  min-width: 0;
+}
+
+.ck-conv__subject {
+  overflow: hidden;
+  color: var(--ck-ink-1);
+  font-size: var(--ck-text-13);
+  line-height: 20px;
+  font-weight: var(--ck-weight-semibold);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ck-conv__meta,
+.ck-conv__date,
+.ck-conv__snippet {
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+}
+
+.ck-conv__date {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.ck-conv__snippet {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ck-thread {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ck-thread__stream {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ck-space-16);
+  min-height: 0;
+  padding: var(--ck-space-20) var(--ck-inset);
+  background: var(--ck-canvas);
+  overflow-y: auto;
+}
+
+.ck-thread__day {
+  align-self: center;
+  padding: var(--ck-space-2) var(--ck-space-10);
+  border-radius: var(--ck-radius-pill);
+  background: var(--ck-surface-3);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-11);
+  line-height: 16px;
+  font-weight: var(--ck-weight-semibold);
+}
+
+.ck-msg {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-4);
+  max-width: min(78%, 560px);
+}
+
+.ck-msg--agency {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.ck-msg--client {
+  align-self: flex-start;
+}
+
+.ck-msg__meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ck-space-8);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-11);
+  line-height: 16px;
+}
+
+.ck-msg__author {
+  color: var(--ck-ink-2);
+  font-size: var(--ck-text-12);
+  font-weight: var(--ck-weight-semibold);
+}
+
+.ck-msg--agency .ck-msg__author {
+  color: var(--ck-accent-ink);
+}
+
+.ck-msg__bubble {
+  padding: var(--ck-space-10) var(--ck-space-12);
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-md);
+  background: var(--ck-surface);
+  color: var(--ck-ink-1);
+  box-shadow: var(--ck-shadow-xs);
+  font-size: var(--ck-text-13);
+  line-height: 20px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ck-msg--client .ck-msg__bubble {
+  border-bottom-left-radius: var(--ck-radius-xs);
+}
+
+.ck-msg--agency .ck-msg__bubble {
+  border-color: var(--ck-accent-100);
+  border-bottom-right-radius: var(--ck-radius-xs);
+  background: var(--ck-accent-soft);
+}
+
+.ck-composer {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: var(--ck-space-8);
+  padding: var(--ck-space-12) var(--ck-inset);
+  border-top: var(--ck-border-soft);
+  background: var(--ck-surface);
+}
+
+.ck-composer .ck-textarea {
+  min-height: 72px;
+  max-height: 220px;
+}
+
+.ck-composer__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ck-gap-sm);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-12);
+}
+
+/* --------------------------------------------------------------------------
+   Console & logs — version claire (cohérence du thème blanc)
+   -------------------------------------------------------------------------- */
+.ck-console {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-md);
+  background: var(--ck-surface-2);
+  overflow: hidden;
+}
+
+.ck-console__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ck-gap-sm);
+  padding: var(--ck-space-8) var(--ck-space-12);
+  border-bottom: var(--ck-border-soft);
+  background: var(--ck-surface);
+}
+
+.ck-console__title {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-8);
+  color: var(--ck-ink-1);
+  font-size: var(--ck-text-12);
+  font-weight: var(--ck-weight-semibold);
+}
+
+.ck-console__title .ck-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--ck-ink-3);
+}
+
+.ck-console__output {
+  min-height: 120px;
+  max-height: 280px;
+  margin: 0;
+  padding: var(--ck-space-12) var(--ck-inset);
+  overflow: auto;
+  color: var(--ck-ink-2);
+  font-family: var(--ck-font-mono);
+  font-stretch: var(--ck-mono-stretch);
+  font-size: var(--ck-text-12);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  tab-size: 2;
+}
+
+.ck-console__line {
+  display: block;
+}
+
+.ck-console__line.is-cmd {
+  color: var(--ck-ink-1);
+  font-weight: var(--ck-weight-semibold);
+}
+
+.ck-console__line.is-cmd::before {
+  content: "$ ";
+  color: var(--ck-accent);
+}
+
+.ck-console__line.is-ok { color: var(--ck-good-ink); }
+.ck-console__line.is-err { color: var(--ck-danger-ink); }
+.ck-console__line.is-warn { color: var(--ck-warn-ink); }
+.ck-console__line.is-sys { color: var(--ck-ink-3); }
+
+.ck-console__time {
+  color: var(--ck-ink-3);
+}
+
+.ck-console__prompt {
+  display: flex;
+  gap: var(--ck-gap-sm);
+  padding: var(--ck-space-8) var(--ck-space-12);
+  border-top: var(--ck-border-soft);
+  background: var(--ck-surface);
+}
+
+.ck-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ck-space-6);
+}
+
+.ck-chip {
+  display: inline-flex;
+  align-items: center;
+  height: var(--ck-h-xs);
+  padding: 0 var(--ck-space-8);
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-pill);
+  background: var(--ck-surface);
+  color: var(--ck-ink-2);
+  font-family: var(--ck-font-mono);
+  font-stretch: var(--ck-mono-stretch);
+  font-size: var(--ck-text-11);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--ck-dur-1) var(--ck-ease-out),
+    border-color var(--ck-dur-1) var(--ck-ease-out),
+    color var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-chip:hover {
+  border-color: var(--ck-accent-line);
+  background: var(--ck-accent-soft);
+  color: var(--ck-accent-ink);
+}
+
+/* --------------------------------------------------------------------------
+   Reçu de paiement
+   -------------------------------------------------------------------------- */
+.ck-receipt__parties {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ck-space-24);
+  padding: var(--ck-space-20) var(--ck-inset-lg);
+  border-bottom: var(--ck-border-soft);
+}
+
+.ck-receipt__party {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-2);
+  min-width: 0;
+}
+
+.ck-receipt__party:last-child {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.ck-receipt__role {
+  margin-bottom: var(--ck-space-4);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-11);
+  line-height: 16px;
+  font-weight: var(--ck-weight-semibold);
+  letter-spacing: var(--ck-tracking-overline);
+  text-transform: uppercase;
+}
+
+.ck-receipt__name {
+  color: var(--ck-ink-1);
+  font-size: var(--ck-text-14);
+  line-height: 20px;
+  font-weight: var(--ck-weight-semibold);
+}
+
+.ck-receipt__line {
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-12);
+  line-height: 18px;
+}
+
+.ck-receipt .ck-table th:first-child,
+.ck-receipt .ck-table td:first-child {
+  padding-left: var(--ck-inset-lg);
+}
+
+.ck-receipt .ck-table th:last-child,
+.ck-receipt .ck-table td:last-child {
+  padding-right: var(--ck-inset-lg);
+}
+
+.ck-receipt__totals {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: end;
+  gap: var(--ck-space-6) var(--ck-space-32);
+  padding: var(--ck-space-12) var(--ck-inset-lg) var(--ck-space-16);
+  border-top: var(--ck-border-soft);
+  font-size: var(--ck-text-13);
+}
+
+.ck-receipt__totals dt {
+  color: var(--ck-ink-3);
+  text-align: right;
+}
+
+.ck-receipt__totals dd {
+  color: var(--ck-ink-1);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ck-receipt__totals .is-total {
+  padding-top: var(--ck-space-8);
+  border-top: var(--ck-border);
+  color: var(--ck-ink-1);
+  font-size: var(--ck-text-14);
+  font-weight: var(--ck-weight-semibold);
+}
+
+/* --------------------------------------------------------------------------
+   Studio d'édition : omnibar + canevas clair pointillé
+   -------------------------------------------------------------------------- */
+.ck-studio {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  background: var(--ck-canvas);
+}
+
+.ck-omnibar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--ck-space-16);
+  flex-shrink: 0;
+  height: var(--ck-topbar-h);
+  padding: 0 var(--ck-space-16);
+  border-bottom: var(--ck-border);
+  background: var(--ck-surface);
+}
+
+.ck-omnibar__start,
+.ck-omnibar__center,
+.ck-omnibar__end {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-gap-sm);
+  min-width: 0;
+}
+
+.ck-omnibar__center {
+  justify-self: center;
+}
+
+.ck-omnibar__end {
+  justify-self: end;
+  gap: var(--ck-space-4);
+}
+
+.ck-omnibar__title {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-8);
+  min-width: 0;
+  color: var(--ck-ink-1);
+  font-size: var(--ck-text-13);
+  font-weight: var(--ck-weight-semibold);
+  white-space: nowrap;
+}
+
+.ck-omnibar__sep {
+  width: 1px;
+  height: 20px;
+  margin: 0 var(--ck-space-4);
+  background: var(--ck-line);
+}
+
+.ck-url-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ck-space-6);
+  max-width: 100%;
+  height: var(--ck-h-sm);
+  padding: 0 var(--ck-space-12);
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-pill);
+  background: var(--ck-surface-2);
+  color: var(--ck-ink-2);
+  font-family: var(--ck-font-mono);
+  font-stretch: var(--ck-mono-stretch);
+  font-size: var(--ck-text-11);
+  white-space: nowrap;
+}
+
+.ck-url-pill .ck-icon {
+  width: 12px;
+  height: 12px;
+  color: var(--ck-good);
+}
+
+.ck-canvas {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  min-height: 0;
+  padding: var(--ck-space-24);
+  background-color: var(--ck-surface-3);
+  background-image: radial-gradient(circle at 1px 1px, var(--ck-line-strong) 1px, transparent 0);
+  background-size: 16px 16px;
+  overflow: hidden;
+}
+
+.ck-device {
+  width: 100%;
+  height: 100%;
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-md);
+  background: var(--ck-white);
+  box-shadow: var(--ck-shadow-xl);
+  overflow: hidden;
+  transition:
+    width var(--ck-dur-4) var(--ck-ease-out),
+    height var(--ck-dur-4) var(--ck-ease-out);
+}
+
+.ck-device[data-device="tablet"] {
+  width: min(768px, 100%);
+  height: 92%;
+  border-radius: var(--ck-radius-lg);
+}
+
+.ck-device[data-device="mobile"] {
+  width: min(375px, 100%);
+  height: 90%;
+  border-radius: var(--ck-radius-lg);
+}
+
+.ck-device iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--ck-white);
+}
+
+/* --------------------------------------------------------------------------
+   Connexion
+   -------------------------------------------------------------------------- */
+.ck-auth {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: var(--ck-space-24) var(--ck-page-x);
+  background-color: var(--ck-canvas);
+  background-image:
+    linear-gradient(var(--ck-line-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--ck-line-soft) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: center;
+}
+
+.ck-auth::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 0%, var(--ck-canvas) 68%);
+  pointer-events: none;
+}
+
+.ck-auth__card {
+  position: relative;
+  width: min(400px, 100%);
+  padding: var(--ck-space-32);
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-lg);
+  background: var(--ck-surface);
+  box-shadow: var(--ck-shadow-lg);
+  animation: ck-rise var(--ck-dur-4) var(--ck-ease-out) both;
+}
+
+.ck-auth__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ck-space-4);
+  margin-bottom: var(--ck-space-24);
+  text-align: center;
+}
+
+.ck-auth__mark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: var(--ck-space-12);
+  border-radius: var(--ck-radius-md);
+  background: var(--ck-accent);
+  color: var(--ck-on-accent);
+  box-shadow: var(--ck-shadow-primary), 0 0 0 6px var(--ck-accent-soft);
+}
+
+.ck-auth__mark .ck-icon {
+  width: 22px;
+  height: 22px;
+  stroke-width: 2;
+}
+
+.ck-auth__title {
+  color: var(--ck-ink-1);
+  font-size: 20px;
+  line-height: 26px;
+  letter-spacing: -0.02em;
+}
+
+.ck-auth__sub {
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-13);
+}
+
+.ck-auth__foot {
+  margin-top: var(--ck-space-20);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-12);
+  text-align: center;
+}
+
+@media (max-width: 1100px) {
+  .ck-inbox {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+
+  .ck-omnibar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .ck-omnibar__center {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .ck-receipt__parties {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ck-receipt__party:last-child {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .ck-auth__card {
+    padding: var(--ck-space-24);
+  }
+}

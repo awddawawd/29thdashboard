@@ -1,0 +1,35 @@
+<!-- Squelette : jauge de ressource (page Santé) — carte, cadran, mesures, mini-série.
+     Même gabarit que gaugeCard() : UI.card + .ck-gauge-card + .ck-livespark. -->
+<article class="ck-card" aria-hidden="true">
+  <header class="ck-card__header">
+    <div class="ck-card__heading">
+      <span class="ck-skeleton ck-skeleton--title ck-skeleton--w35"></span>
+      <span class="ck-skeleton ck-skeleton--text ck-skeleton--w55"></span>
+    </div>
+    <div class="ck-card__actions"><span class="ck-skeleton ck-skeleton--pill"></span></div>
+  </header>
+  <div class="ck-card__body">
+    <div class="ck-stack" style="--ck-stack-gap: var(--ck-space-16)">
+      <div class="ck-gauge-card">
+        <span class="ck-skeleton ck-skeleton-gauge"></span>
+        <div class="ck-stats">
+          <div class="ck-stat">
+            <span class="ck-skeleton ck-skeleton--text ck-skeleton--w65"></span>
+            <span class="ck-skeleton ck-skeleton--title ck-skeleton--w45"></span>
+          </div>
+          <div class="ck-stat">
+            <span class="ck-skeleton ck-skeleton--text ck-skeleton--w55"></span>
+            <span class="ck-skeleton ck-skeleton--title ck-skeleton--w35"></span>
+          </div>
+        </div>
+      </div>
+      <div class="ck-livespark">
+        <div class="ck-livespark__head">
+          <span class="ck-skeleton ck-skeleton--text ck-skeleton--w35"></span>
+          <span class="ck-skeleton ck-skeleton--text ck-skeleton--w25"></span>
+        </div>
+        <div class="ck-livespark__plot"><span class="ck-skeleton"></span></div>
+      </div>
+    </div>
+  </div>
+</article>

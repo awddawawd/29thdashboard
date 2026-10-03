@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <title>Tableau de bord · Cockpit WaaS</title>
+    <meta name="description" content="Cockpit agence : revenus récurrents, fréquentation de la flotte, sites et derniers échanges clients.">
+    <!-- @include head.html -->
+  </head>
+  <body>
+    <!-- @include body-start.html brand="Cockpit WaaS" -->
+
+    <div class="ck-app" id="cockpit-app">
+      <!-- @include admin/sidebar.html -->
+      <div class="ck-scrim"></div>
+
+      <div class="ck-main">
+        <!-- @include admin/topbar.html title="Tableau de bord" -->
+
+        <main class="ck-content" id="main" tabindex="-1">
+          <div class="ck-stack">
+            <div id="dash-incident" hidden></div>
+
+            <div class="ck-kpi-row" id="dash-kpis" aria-label="Indicateurs clés">
+              <!-- @include skeleton/kpis.html -->
+            </div>
+
+            <article class="ck-card">
+              <header class="ck-card__header">
+                <div class="ck-card__heading">
+                  <h2 class="ck-card__title">Activité &amp; fréquentation</h2>
+                  <p class="ck-card__subtitle">Trafic quotidien de l'ensemble des vitrines · 14 jours</p>
+                </div>
+                <div class="ck-card__actions">
+                  <span class="ck-badge" data-tone="info"><span class="ck-badge__dot"></span>Temps réel</span>
+                </div>
+              </header>
+              <div class="ck-card__body" id="dash-traffic">
+                <!-- @include skeleton/chart.html -->
+              </div>
+            </article>
+
+            <article class="ck-card">
+              <header class="ck-card__header">
+                <div class="ck-card__heading">
+                  <h2 class="ck-card__title">Sites &amp; serveurs VPS</h2>
+                  <p class="ck-card__subtitle" id="dash-sites-sub"><span class="ck-skeleton ck-skeleton--text ck-skeleton--w35"></span></p>
+                </div>
+                <div class="ck-card__actions">
+                  <a href="/admin/sites?new=1" class="ck-btn ck-btn--primary ck-btn--xs">
+                    <svg class="ck-icon" aria-hidden="true"><use href="#i-plus"/></svg><span>Nouveau site</span>
+                  </a>
+                </div>
+              </header>
+              <div id="dash-sites">
+                <!-- @include skeleton/table.html cols="6" -->
+              </div>
+            </article>
+
+            <article class="ck-card">
+              <header class="ck-card__header">
+                <div class="ck-card__heading">
+                  <h2 class="ck-card__title">Derniers échanges clients</h2>
+                  <p class="ck-card__subtitle" id="dash-tickets-sub"><span class="ck-skeleton ck-skeleton--text ck-skeleton--w25"></span></p>
+                </div>
+              </header>
+              <div id="dash-tickets">
+                <!-- @include skeleton/table.html cols="5" -->
+              </div>
+            </article>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div id="modal-container"></div>
+
+    <!-- @include scripts.html -->
+    <script>
+    (function () {
+      'use strict';
+      const { h, fmt } = UI;
+      const $ = (id) => document.getElementById(id);
+
+      function renderKpis(k) {
+        const estimate = k.source === 'estimation';
+        const ratio = k.total ? (k.online / k.total) * 100 : 0;
+        UI.replace($('dash-kpis'),
+          UI.kpi({
+            label: 'MRR', value: fmt.number(k.mrr), unit: '€', icon: 'euro', tone: 'accent',
+            meta: k.mrr
+              ? `ARR ${fmt.money(k.arr, 0)} · ARPU ${fmt.money(k.arpu, 0)}${estimate ? ' · estimation' : ''}`
+              : 'Aucun abonnement actif'
+          }),
+          UI.kpi({
+            label: 'Sites hébergés', icon: 'globe', tone: k.total ? 'good' : 'neutral',
+            value: h('span', null, String(k.online), h('span', { class: 'ck-muted' }, ` / ${k.total}`)),
+            meta: k.total ? `${fmt.percent(ratio, 0)} en ligne · RAM ${fmt.mb(k.fleet_ram_mb)}` : 'Prêt pour vos déploiements'
+          }),
+          UI.kpi({
+            label: 'En direct', value: String(k.live || 0), icon: 'eye', tone: k.live ? 'good' : 'neutral',
+            meta: k.live ? 'Audience active sur les vitrines' : 'En attente de trafic'
+          }),
+          UI.kpi({
+            label: 'Trafic · 14 j', value: fmt.number(k.visitors_14d), icon: 'activity',
+            meta: k.visitors_14d ? `${fmt.number(k.pageviews_14d)} pages vues` : 'En attente de visites'
+          })
+        );
+      }
+
+      function renderSites(data) {
+        const k = data.kpis;
+        $('dash-sites-sub').textContent = `${k.total} vitrine(s) · ${k.online} en ligne${data.docker_available ? '' : ' · Docker injoignable'}`;
+        UI.replace($('dash-sites'), Views.sitesTable(data.sites, {
+          mode: 'vps',
+          viewAll: data.sites_total > data.sites.length ? { label: `Voir les ${data.sites_total} sites`, href: '/admin/sites' } : null
+        }));
+      }
+
+      function renderTickets(data) {
+        $('dash-tickets-sub').textContent = data.open_tickets
+          ? `${data.open_tickets} demande(s) en cours` : 'Aucune demande en attente';
+        UI.replace($('dash-tickets'), Views.ticketsTable(data.tickets, {
+          viewAll: data.tickets.length ? { label: 'Voir tous les tickets', href: '/admin/support' } : null
+        }));
+      }
+
+      function renderIncident(shell) {
+        const box = $('dash-incident');
+        const incidents = (shell && shell.incidents || []).filter((i) => i.level === 'danger' || i.level === 'warn');
+        if (!incidents.length) { box.hidden = true; return; }
+        const first = incidents[0];
+        box.hidden = false;
+        UI.replace(box, UI.alert({
+          tone: first.level, bar: true, icon: first.icon,
+          title: `${first.title}${incidents.length > 1 ? ` (+${incidents.length - 1})` : ''}`,
+          text: `${first.message} ${first.recommendation}`,
+          actions: [UI.btn('Voir la santé', { href: '/admin/health', size: 'sm', variant: first.level === 'danger' ? 'primary' : 'secondary' })]
+        }));
+      }
+
+      let trafficKey = '';
+      async function load() {
+        const data = await App.api('/admin/api/overview');
+        renderKpis(data.kpis);
+        renderSites(data);
+        renderTickets(data);
+        const key = JSON.stringify(data.traffic.series);
+        if (key !== trafficKey) {           // la courbe n'est redessinée que si elle change
+          trafficKey = key;
+          Views.trafficChart($('dash-traffic'), data.traffic.series, { height: 240 });
+        }
+        return data;
+      }
+
+      App.onRefresh(load);
+      App.boot(async ({ status }) => {
+        status('Récupération de la flotte et des métriques…');
+        await load();
+      }, { shell: 'admin' }).then((shell) => {
+        renderIncident(shell);
+        App.poll(() => load().catch(() => {}), 25000);
+      });
+    })();
+    </script>
+  </body>
+</html>

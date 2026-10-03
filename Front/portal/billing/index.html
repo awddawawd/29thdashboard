@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <title>Factures &amp; règlements · Espace client</title>
+    <meta name="description" content="Vos factures, règlements et abonnement en cours.">
+    <!-- @include head.html -->
+  </head>
+  <body>
+    <!-- @include body-start.html brand="Espace client" -->
+
+    <div class="ck-app" id="portal-app">
+      <!-- @include portal/sidebar.html -->
+      <div class="ck-scrim"></div>
+
+      <div class="ck-main">
+        <!-- @include portal/topbar.html title="Factures & règlements" -->
+
+        <main class="ck-content" id="main" tabindex="-1">
+          <div class="ck-stack" id="billing-root">
+            <div class="ck-kpi-row" id="billing-kpis" aria-label="Synthèse de facturation">
+              <!-- @include skeleton/kpis.html -->
+            </div>
+            <div id="billing-alert" hidden></div>
+
+            <article class="ck-card">
+              <header class="ck-card__header">
+                <div class="ck-card__heading">
+                  <h2 class="ck-card__title">Factures &amp; règlements</h2>
+                  <p class="ck-card__subtitle" id="billing-sub"><span class="ck-skeleton ck-skeleton--text ck-skeleton--w35"></span></p>
+                </div>
+              </header>
+              <div id="billing-table">
+                <!-- @include skeleton/table.html cols="6" -->
+              </div>
+            </article>
+
+            <article class="ck-card">
+              <header class="ck-card__header">
+                <div class="ck-card__heading">
+                  <h2 class="ck-card__title">Inclus dans votre formule</h2>
+                  <p class="ck-card__subtitle">Hébergement, sécurité et accompagnement du studio</p>
+                </div>
+              </header>
+              <div class="ck-card__body">
+                <div class="ck-auto-grid" style="--ck-min: 240px">
+                  <div class="ck-feature" data-tone="good">
+                    <span class="ck-feature__icon"><svg class="ck-icon" aria-hidden="true"><use href="#i-shield-check"/></svg></span>
+                    <div><p class="ck-feature__title">Hébergement isolé</p><p class="ck-feature__text">Serveur dédié à votre vitrine, surveillé en continu.</p></div>
+                  </div>
+                  <div class="ck-feature" data-tone="good">
+                    <span class="ck-feature__icon"><svg class="ck-icon" aria-hidden="true"><use href="#i-lock"/></svg></span>
+                    <div><p class="ck-feature__title">HTTPS automatique</p><p class="ck-feature__text">Certificat renouvelé sans coupure.</p></div>
+                  </div>
+                  <div class="ck-feature" data-tone="good">
+                    <span class="ck-feature__icon"><svg class="ck-icon" aria-hidden="true"><use href="#i-history"/></svg></span>
+                    <div><p class="ck-feature__title">Contenu sauvegardé</p><p class="ck-feature__text">Textes et images conservés hors du serveur.</p></div>
+                  </div>
+                  <div class="ck-feature" data-tone="good">
+                    <span class="ck-feature__icon"><svg class="ck-icon" aria-hidden="true"><use href="#i-pencil"/></svg></span>
+                    <div><p class="ck-feature__title">Studio illimité</p><p class="ck-feature__text">Modifiez vos textes et images en direct.</p></div>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div id="modal-container"></div>
+
+    <!-- @include scripts.html -->
+    <script>
+    (function () {
+      'use strict';
+      const { h, fmt } = UI;
+      const $ = (id) => document.getElementById(id);
+
+      async function openReceipt(inv) {
+        try {
+          Views.receiptDialog(await App.api(`/api/v1/invoices/${encodeURIComponent(inv.id)}`));
+        } catch (error) {
+          App.toastError(error);
+        }
+      }
+
+      function render(site, data) {
+        const t = data.totals;
+        const invoices = data.invoices.filter((inv) => inv.status !== 'draft');
+        UI.replace($('billing-kpis'),
+          UI.kpi({ label: 'Total réglé', value: fmt.money(t.paid_total), icon: 'check-circle', tone: 'good', meta: 'Cumul des règlements' }),
+          UI.kpi({ label: 'À régler', value: fmt.money(t.pending_total), icon: 'clock', tone: t.overdue_count ? 'danger' : t.pending_count ? 'warn' : 'good',
+            meta: t.pending_count ? `${t.pending_count} facture(s)` : 'Aucun impayé' }),
+          UI.kpi({ label: 'Abonnement', value: site.price_monthly ? fmt.number(site.price_monthly) : 'Inclus', unit: site.price_monthly ? '€/mois' : null, icon: 'credit-card', tone: 'accent', meta: `Formule ${site.plan_name}` }),
+          UI.kpi({ label: 'Client depuis', value: site.contract_since ? fmt.dateShort(site.contract_since) : '—', icon: 'calendar-clock', meta: site.contract_since ? String(new Date(site.contract_since).getFullYear()) : 'Contrat en préparation' }));
+
+        const pending = invoices.filter((inv) => inv.status === 'pending' || inv.status === 'overdue');
+        const box = $('billing-alert');
+        box.hidden = !pending.length;
+        if (pending.length) {
+          const first = pending[0];
+          UI.replace(box, UI.alert({
+            tone: first.status === 'overdue' ? 'danger' : 'warn', bar: true,
+            title: `Facture ${first.status === 'overdue' ? 'échue' : 'en attente'} : ${first.number} (${fmt.money(first.amount)})`,
+            text: `Échéance le ${fmt.date(first.due_at)}. Les modalités de règlement figurent sur la facture ; le studio enregistre votre paiement dès réception.`,
+            actions: [UI.btn('Voir la facture', { variant: 'primary', size: 'sm', icon: 'file-text', onClick: () => openReceipt(first) })]
+          }));
+        }
+
+        $('billing-sub').textContent = `${invoices.length} facture(s) · ${site.name}`;
+        UI.replace($('billing-table'), Views.invoicesTable(invoices, {
+          showSite: false,
+          emptyTitle: 'Aucune facture', emptyDesc: 'Vos factures mensuelles apparaîtront ici.',
+          actions: (inv) => [UI.btn(inv.status === 'paid' ? 'Reçu' : 'Facture', { icon: 'file-text', variant: 'ghost', size: 'xs', onClick: () => openReceipt(inv) })]
+        }));
+      }
+
+      let site = null;
+      async function load() {
+        if (!site) return;
+        render(site, await App.api(`/api/v1/sites/${encodeURIComponent(site.site_id)}/invoices`));
+      }
+
+      App.onRefresh(load);
+      App.boot(async ({ shell, status }) => {
+        if (!shell.site) {
+          UI.replace($('billing-root'), UI.card({ body: UI.empty({ title: 'Aucune vitrine rattachée', desc: 'Vos factures apparaîtront ici dès la mise en service de votre site.', icon: 'credit-card' }) }));
+          return;
+        }
+        site = shell.site;
+        status('Chargement de vos factures…');
+        await load();
+      }, { shell: 'portal' });
+    })();
+    </script>
+  </body>
+</html>

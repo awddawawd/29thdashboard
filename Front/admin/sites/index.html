@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <title>Sites &amp; vitrines · Cockpit WaaS</title>
+    <meta name="description" content="Catalogue des vitrines clientes : recherche, état des serveurs, accès au Studio et déploiement d'un nouveau site.">
+    <!-- @include head.html -->
+  </head>
+  <body>
+    <!-- @include body-start.html brand="Cockpit WaaS" -->
+
+    <div class="ck-app" id="cockpit-app">
+      <!-- @include admin/sidebar.html -->
+      <div class="ck-scrim"></div>
+
+      <div class="ck-main">
+        <!-- @include admin/topbar.html title="Sites & vitrines" -->
+
+        <main class="ck-content" id="main" tabindex="-1">
+          <div class="ck-stack">
+            <div class="ck-toolbar">
+              <label class="ck-search">
+                <svg class="ck-icon" aria-hidden="true"><use href="#i-search"/></svg>
+                <input type="search" class="ck-input" id="sites-search" placeholder="Rechercher par nom, client, identifiant, domaine…" aria-label="Rechercher un site" autocomplete="off">
+                <span class="ck-kbd" aria-hidden="true">/</span>
+              </label>
+              <div class="ck-cluster">
+                <div class="ck-segmented ck-segmented--sm" data-ck-segmented role="group" aria-label="Filtrer par état" id="sites-filter">
+                  <button type="button" class="ck-segmented__item" data-value="all" aria-pressed="true">Tous</button>
+                  <button type="button" class="ck-segmented__item" data-value="online" aria-pressed="false">En ligne</button>
+                  <button type="button" class="ck-segmented__item" data-value="offline" aria-pressed="false">Arrêtés</button>
+                  <button type="button" class="ck-segmented__item" data-value="attention" aria-pressed="false">À traiter</button>
+                </div>
+                <button type="button" class="ck-btn ck-btn--primary ck-btn--sm" id="btn-deploy">
+                  <svg class="ck-icon" aria-hidden="true"><use href="#i-rocket"/></svg><span>Déployer un site</span>
+                </button>
+              </div>
+            </div>
+
+            <article class="ck-card">
+              <header class="ck-card__header">
+                <div class="ck-card__heading">
+                  <h2 class="ck-card__title">Sites &amp; vitrines clients</h2>
+                  <p class="ck-card__subtitle" id="sites-sub"><span class="ck-skeleton ck-skeleton--text ck-skeleton--w35"></span></p>
+                </div>
+                <div class="ck-card__actions" id="sites-counters">
+                  <span class="ck-skeleton ck-skeleton--pill"></span>
+                  <span class="ck-skeleton ck-skeleton--pill"></span>
+                </div>
+              </header>
+              <div id="sites-table">
+                <!-- @include skeleton/table.html cols="6" -->
+              </div>
+            </article>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div id="modal-container"></div>
+
+    <!-- @include scripts.html -->
+    <script>
+    (function () {
+      'use strict';
+      const { h, fmt } = UI;
+      const $ = (id) => document.getElementById(id);
+      const DEFAULT_TEMPLATE = 'https://github.com/awddawawd/template_webpage.git';
+
+      const state = { sites: [], plans: [], clients: [], query: '', filter: 'all', docker: true, privateRepos: false };
+
+      const FILTERS = {
+        all: () => true,
+        online: (s) => s.running,
+        offline: (s) => ['stopped', 'paused'].includes(s.status),
+        attention: (s) => ['error', 'restarting', 'not_provisioned'].includes(s.status)
+      };
+
+      function matches(site) {
+        const q = state.query;
+        if (!q) return true;
+        return [site.name, site.site_id, site.client_name, site.domain, site.plan_name]
+          .some((value) => String(value || '').toLowerCase().includes(q));
+      }
+
+      function render() {
+        const visible = state.sites.filter(FILTERS[state.filter]).filter(matches);
+        const online = state.sites.filter((s) => s.running).length;
+        $('sites-sub').textContent = `${state.sites.length} vitrine(s) hébergée(s) · ${online} en ligne${state.docker ? '' : ' · Docker injoignable'}`;
+        UI.replace($('sites-counters'),
+          UI.tag(`${online} en ligne`, { tone: 'good', mono: true }),
+          UI.tag(`${state.sites.length - online} hors ligne`, { mono: true }));
+        const filtered = state.query || state.filter !== 'all';
+        UI.replace($('sites-table'), Views.sitesTable(visible, filtered ? {
+          emptyTitle: 'Aucun site ne correspond',
+          emptyDesc: 'Modifiez la recherche ou le filtre d\'état.',
+          emptyAction: false
+        } : {}));
+      }
+
+      async function load() {
+        const data = await App.api('/admin/api/sites');
+        state.sites = data.containers || [];
+        state.plans = data.plans || [];
+        state.docker = data.docker_available;
+        state.privateRepos = Boolean(data.private_repos);
+        render();
+      }
+
+      /* ---------- Recherche & filtres ---------- */
+      $('sites-search').addEventListener('input', (event) => {
+        state.query = event.target.value.trim().toLowerCase();
+        render();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === '/' && !event.target.closest('input, textarea, select')) {
+          event.preventDefault();
+          $('sites-search').focus();
+        }
+      });
+      $('sites-filter').addEventListener('ck:change', (event) => {
+        state.filter = event.detail.value;
+        render();
+      });
+
+      /* ---------- Déploiement d'une vitrine ---------- */
+      function slugify(text) {
+        return String(text || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48);
+      }
+
+      async function openDeployDialog() {
+        if (!state.clients.length) {
+          try { state.clients = (await App.api('/admin/api/clients')).clients || []; } catch (error) { state.clients = []; }
+        }
+        const plans = state.plans.length ? state.plans : [{ id: 'none', name: 'Sans formule', price: 0 }];
+        const name = UI.input('name', { id: 'new-name', required: true, placeholder: 'ex. Boulangerie artisanale', maxlength: 120 });
+        const slug = UI.input('site_id', { id: 'new-slug', mono: true, required: true, pattern: '^[a-z0-9-]+$', placeholder: 'boulangerie-artisanale', maxlength: 48 });
+        const client = UI.select('client_id', [['', '— Aucun (site interne ou à rattacher)'],
+          ...state.clients.map((c) => [c.id, `${c.username} · ${c.sites_count || 0} site(s)`])], { id: 'new-client' });
+        const plan = UI.select('plan_id', plans.map((p) => [p.id, `${p.name} — ${p.price ? `${fmt.number(p.price)} €/mois` : 'gratuit'}`]), { id: 'new-plan', value: 'standard' });
+        const price = UI.input('price_monthly', { id: 'new-price', type: 'number', min: 0, step: '0.01', mono: true });
+        const domain = UI.input('domain', { id: 'new-domain', mono: true, placeholder: 'vide = sous-domaine de la plateforme' });
+        const repo = UI.input('github_url', { id: 'new-repo', type: 'url', mono: true, required: true, value: DEFAULT_TEMPLATE });
+        const errorBox = UI.alert({ tone: 'danger', inline: true, text: '', class: 'ck-form-error' });
+
+        let slugTouched = false;
+        name.addEventListener('input', () => { if (!slugTouched) slug.value = slugify(name.value); });
+        slug.addEventListener('input', () => { slugTouched = true; });
+        const syncPrice = () => {
+          const chosen = plans.find((p) => p.id === plan.value);
+          price.value = chosen ? chosen.price : 0;
+        };
+        plan.addEventListener('change', syncPrice);
+        syncPrice();
+
+        const submit = UI.btn('Déployer le serveur', { variant: 'primary', icon: 'rocket', type: 'submit', attrs: { form: 'form-deploy' } });
+        const form = h('form', { class: 'ck-form', id: 'form-deploy', novalidate: false },
+          h('div', { class: 'ck-form-grid' },
+            UI.field("Nom de l'entreprise ou du site", name, { required: true }),
+            UI.field('Identifiant (slug)', slug, { required: true, help: 'Minuscules, chiffres et tirets. Conteneur : waas-<identifiant>.' }),
+            UI.field('Client propriétaire', client, { help: 'Rattache la vitrine à son espace client.' }),
+            UI.field("Formule d'abonnement", plan),
+            UI.field('Prix mensuel (€)', price, { help: 'Pré-rempli selon la formule, modifiable.' }),
+            UI.field('Domaine externe', domain, { optional: true })),
+          UI.field('Dépôt Git du template', repo, { required: true, full: true, help: `${Views.repoHelp(state.privateRepos)} Le contenu éditable est synchronisé au démarrage.` }),
+          errorBox);
+
+        const dialog = UI.dialog({
+          title: 'Déployer une nouvelle vitrine',
+          sub: 'Conteneur isolé et durci, créé immédiatement ; la fiche commerciale est enregistrée avec lui.',
+          size: 'lg',
+          body: form,
+          footer: [UI.btn('Annuler', { variant: 'ghost', attrs: { 'data-ck-close': '' } }), submit]
+        });
+        name.focus();
+
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          if (!form.reportValidity()) return;
+          const values = UI.formValues(form);
+          const payload = {
+            site_id: values.site_id, name: values.name, github_url: values.github_url,
+            plan_id: values.plan_id, price_monthly: values.price_monthly
+          };
+          if (values.client_id) payload.client_id = values.client_id;
+          if (values.domain) payload.domain = values.domain;
+          errorBox.classList.remove('is-visible');
+          UI.busy(submit, true, 'Déploiement…');
+          try {
+            const result = await App.api('/admin/api/sites/deploy', { method: 'POST', body: payload });
+            Cockpit.closeDialog(dialog);
+            App.toastOk('Vitrine déployée', `« ${values.name} » démarre sur le port ${result.host_port}.`);
+            window.setTimeout(() => {
+              window.location.href = `/admin/vps/detail?id=${encodeURIComponent(result.site_id)}&deployed=1`;
+            }, 700);
+          } catch (error) {
+            errorBox.querySelector('.ck-alert__text').textContent = error.message;
+            errorBox.classList.add('is-visible');
+          } finally {
+            UI.busy(submit, false);
+          }
+        });
+      }
+
+      $('btn-deploy').addEventListener('click', openDeployDialog);
+
+      App.onRefresh(load);
+      App.boot(async ({ status }) => {
+        status('Chargement du catalogue des vitrines…');
+        await load();
+      }, { shell: 'admin' }).then(() => {
+        if (App.param('new')) {
+          App.setParam('new', null);
+          openDeployDialog();
+        }
+        App.poll(() => load().catch(() => {}), 20000);
+      });
+    })();
+    </script>
+  </body>
+</html>

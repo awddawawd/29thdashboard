@@ -1,0 +1,78 @@
+<!-- Navigation de l'espace client (le site courant est reporté dans chaque lien par App.portal) -->
+<aside class="ck-sidebar" id="app-sidebar" aria-label="Espace client">
+  <div class="ck-sidebar__brand">
+    <a href="/portal" class="ck-brand" data-site-link>
+      <span class="ck-brand__mark"><svg class="ck-icon" aria-hidden="true"><use href="#i-layers"/></svg></span>
+      <span class="ck-brand__text">
+        <span class="ck-brand__title">Espace client</span>
+        <span class="ck-brand__sub" data-shell="site-name">Ma vitrine</span>
+      </span>
+    </a>
+  </div>
+
+  <nav class="ck-sidebar__nav" aria-label="Navigation client">
+    <div class="ck-nav-group">
+      <span class="ck-nav-group__title">Mon espace</span>
+      <ul class="ck-nav" role="list">
+        <li><a href="/portal" class="ck-nav__link" data-nav="/portal" data-site-link>
+          <svg class="ck-icon ck-nav__icon" aria-hidden="true"><use href="#i-layout-dashboard"/></svg>
+          <span class="ck-nav__label">Vue d'ensemble</span></a></li>
+      </ul>
+    </div>
+
+    <div class="ck-nav-group">
+      <span class="ck-nav-group__title">Ma vitrine</span>
+      <ul class="ck-nav" role="list">
+        <li><a href="/studio" class="ck-nav__link" data-site-link="studio">
+          <svg class="ck-icon ck-nav__icon" aria-hidden="true"><use href="#i-pencil"/></svg>
+          <span class="ck-nav__label">Éditeur visuel</span></a></li>
+        <li><a href="#" class="ck-nav__link" data-shell="site-visit" target="_blank" rel="noopener">
+          <svg class="ck-icon ck-nav__icon" aria-hidden="true"><use href="#i-external"/></svg>
+          <span class="ck-nav__label">Visiter le site</span></a></li>
+      </ul>
+    </div>
+
+    <div class="ck-nav-group">
+      <span class="ck-nav-group__title">Gestion &amp; suivi</span>
+      <ul class="ck-nav" role="list">
+        <li><a href="/portal/billing" class="ck-nav__link" data-nav="/portal/billing" data-site-link>
+          <svg class="ck-icon ck-nav__icon" aria-hidden="true"><use href="#i-credit-card"/></svg>
+          <span class="ck-nav__label">Factures &amp; règlements</span></a></li>
+        <li><a href="/portal/support" class="ck-nav__link" data-nav="/portal/support" data-site-link>
+          <svg class="ck-icon ck-nav__icon" aria-hidden="true"><use href="#i-message"/></svg>
+          <span class="ck-nav__label">Support studio</span>
+          <span class="ck-count" data-shell="pending-tickets" hidden></span></a></li>
+      </ul>
+    </div>
+
+    <div class="ck-nav-group" data-shell="agency-nav" hidden>
+      <span class="ck-nav-group__title">Mode agence</span>
+      <ul class="ck-nav" role="list">
+        <li><a href="/admin/dashboard" class="ck-nav__link">
+          <svg class="ck-icon ck-nav__icon" aria-hidden="true"><use href="#i-arrow-left"/></svg>
+          <span class="ck-nav__label">Cockpit agence</span></a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="ck-sidebar__footer">
+    <button type="button" class="ck-status-card" data-tone="neutral" data-shell="site-status" aria-label="État de la vitrine">
+      <span class="ck-status-card__head"><span class="ck-status-card__dot"></span><span data-shell="site-status-title">Vitrine</span></span>
+      <span class="ck-status-card__sub"><svg class="ck-icon" aria-hidden="true"><use href="#i-shield-check"/></svg><span data-shell="site-status-text">Vérification…</span></span>
+    </button>
+
+    <span class="ck-clock"><svg class="ck-icon" aria-hidden="true"><use href="#i-clock"/></svg><span data-ck-clock>--:--:--</span></span>
+
+    <div class="ck-user">
+      <span class="ck-avatar ck-avatar--sm" data-shell="avatar">{{shell_avatar}}</span>
+      <span class="ck-user__text">
+        <span class="ck-user__name" data-shell="username">{{shell_username}}</span>
+        <span class="ck-user__role" data-shell="user-role">Espace client</span>
+      </span>
+      <a href="/logout" class="ck-btn ck-btn--ghost ck-btn--xs ck-btn--icon" aria-label="Se déconnecter" title="Se déconnecter">
+        <svg class="ck-icon" aria-hidden="true"><use href="#i-log-out"/></svg>
+      </a>
+    </div>
+    <p class="ck-sidebar__credit">Designed &amp; built by Andi Ajruli — <a href="https://29th.studio" target="_blank" rel="noopener">29th studio</a> · © 2026</p>
+  </div>
+</aside>

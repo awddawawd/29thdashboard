@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <title>Clients · Cockpit WaaS</title>
+    <meta name="description" content="Comptes clients de l'espace client : création, rattachement des vitrines, accès et mots de passe.">
+    <!-- @include head.html -->
+  </head>
+  <body>
+    <!-- @include body-start.html brand="Cockpit WaaS" -->
+
+    <div class="ck-app" id="cockpit-app">
+      <!-- @include admin/sidebar.html -->
+      <div class="ck-scrim"></div>
+
+      <div class="ck-main">
+        <!-- @include admin/topbar.html title="Clients" -->
+
+        <main class="ck-content" id="main" tabindex="-1">
+          <div class="ck-stack">
+            <div class="ck-kpi-row" id="clients-kpis" aria-label="Indicateurs clients">
+              <!-- @include skeleton/kpis.html -->
+            </div>
+
+            <div class="ck-toolbar">
+              <label class="ck-search">
+                <svg class="ck-icon" aria-hidden="true"><use href="#i-search"/></svg>
+                <input type="search" class="ck-input" id="clients-search" placeholder="Rechercher un client ou une vitrine…" aria-label="Rechercher un client" autocomplete="off">
+              </label>
+              <button type="button" class="ck-btn ck-btn--primary ck-btn--sm" id="btn-new-client">
+                <svg class="ck-icon" aria-hidden="true"><use href="#i-plus"/></svg><span>Nouveau client</span>
+              </button>
+            </div>
+
+            <article class="ck-card">
+              <header class="ck-card__header">
+                <div class="ck-card__heading">
+                  <h2 class="ck-card__title">Comptes clients</h2>
+                  <p class="ck-card__subtitle" id="clients-sub"><span class="ck-skeleton ck-skeleton--text ck-skeleton--w35"></span></p>
+                </div>
+              </header>
+              <div id="clients-table">
+                <!-- @include skeleton/table.html cols="5" -->
+              </div>
+            </article>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div id="modal-container"></div>
+
+    <!-- @include scripts.html -->
+    <script>
+    (function () {
+      'use strict';
+      const { h, fmt } = UI;
+      const $ = (id) => document.getElementById(id);
+      const state = { clients: [], sites: [], query: '' };
+
+      /** Mot de passe aléatoire lisible (sans caractères ambigus). */
+      function generatePassword(length) {
+        const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789-_!';
+        const values = new Uint32Array(length || 16);
+        window.crypto.getRandomValues(values);
+        return Array.from(values, (v) => alphabet[v % alphabet.length]).join('');
+      }
+
+      function passwordField(id) {
+        const input = UI.input('password', { id, type: 'text', mono: true, required: true, minlength: 10, maxlength: 128, autocomplete: 'new-password' });
+        const gen = UI.btn('Générer', { size: 'sm', icon: 'key', onClick: () => { input.value = generatePassword(16); input.select(); } });
+        return { input, node: h('div', { class: 'ck-cluster', style: { 'flex-wrap': 'nowrap' } }, input, gen) };
+      }
+
+      function renderKpis() {
+        const attached = state.clients.reduce((sum, c) => sum + (c.sites_count || 0), 0);
+        const orphans = state.clients.filter((c) => !c.sites_count).length;
+        const live = state.clients.reduce((sum, c) => sum + (c.live_visitors || 0), 0);
+        const unassigned = state.sites.filter((s) => !s.client_id).length;
+        UI.replace($('clients-kpis'),
+          UI.kpi({ label: 'Comptes clients', value: String(state.clients.length), icon: 'users', tone: 'accent', meta: 'Accès à l\'espace client' }),
+          UI.kpi({ label: 'Vitrines rattachées', value: String(attached), icon: 'globe', tone: attached ? 'good' : 'neutral', meta: `${unassigned} vitrine(s) sans client` }),
+          UI.kpi({ label: 'Sans vitrine', value: String(orphans), icon: 'alert-triangle', tone: orphans ? 'warn' : 'good', meta: orphans ? 'Compte(s) à rattacher' : 'Tous les comptes sont rattachés' }),
+          UI.kpi({ label: 'En direct', value: String(live), icon: 'eye', tone: live ? 'good' : 'neutral', meta: 'Visiteurs sur leurs vitrines' }));
+      }
+
+      function renderTable() {
+        const q = state.query;
+        const names = Object.fromEntries(state.sites.map((s) => [s.site_id, s.name]));
+        const visible = state.clients.filter((c) => !q || c.username.toLowerCase().includes(q)
+          || (c.sites || []).some((s) => String(names[s.site_id || s.id] || s.site_id || s.id).toLowerCase().includes(q)));
+        $('clients-sub').textContent = `${state.clients.length} compte(s) · ${visible.length} affiché(s)`;
+        const rows = visible.map((c) => {
+          const shortId = c.id && c.id.length > 12 ? `${c.id.slice(0, 8)}…` : (c.id || '');
+          return h('tr', null,
+            UI.td(h('div', { class: 'ck-cluster', style: { 'flex-wrap': 'nowrap', 'min-width': '0' } },
+              h('span', { class: 'ck-avatar ck-avatar--sm' }, UI.initials(c.username)),
+              h('div', { style: { 'min-width': '0', 'overflow': 'hidden' } },
+                h('span', { class: 'ck-table__primary', style: { 'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap' }, title: c.username }, c.username),
+                h('span', { class: 'ck-table__sub ck-mono', style: { 'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap' }, title: c.id }, shortId)))),
+            UI.td((c.sites || []).length
+              ? h('div', { class: 'ck-cluster', style: { gap: 'var(--ck-space-6)' } }, c.sites.map((s) => {
+                const id = s.site_id || s.id;
+                return h('a', { href: `/admin/sites/detail?id=${encodeURIComponent(id)}`, class: 'ck-tag' }, UI.icon('globe'), names[id] || s.name || id);
+              }))
+              : h('span', { class: 'ck-muted' }, 'Aucune vitrine')),
+            UI.tdNum(UI.live(c.live_visitors, { small: true, suffix: '' })),
+            UI.td(fmt.date(c.created_at)),
+            UI.tdActions(
+              UI.btn('Rattacher', { size: 'xs', icon: 'link', title: 'Rattacher une vitrine à ce compte', onClick: () => openAttachDialog(c) }),
+              UI.btn('Mot de passe', { size: 'xs', variant: 'ghost', icon: 'key', iconOnly: true, title: `Mot de passe de ${c.username}`, onClick: () => openPasswordDialog(c) }),
+              UI.btn(`Supprimer ${c.username}`, { size: 'xs', variant: 'ghost', icon: 'trash', iconOnly: true, onClick: () => removeClient(c) })));
+        });
+        UI.replace($('clients-table'), state.clients.length
+          ? UI.table({ caption: 'Comptes clients', columns: ['Client', 'Vitrines', { label: 'En direct', kind: 'num' }, 'Créé le', { label: '', kind: 'actions' }], rows, emptyText: 'Aucun client ne correspond à la recherche.' })
+          : UI.empty({ title: 'Aucun compte client', desc: 'Créez un accès pour que vos clients suivent leur vitrine, leurs factures et leurs échanges.', icon: 'users',
+            actions: [UI.btn('Nouveau client', { variant: 'primary', size: 'sm', icon: 'plus', onClick: openCreateDialog })] }));
+      }
+
+      async function load() {
+        const [clients, catalog] = await Promise.all([App.api('/admin/api/clients'), App.api('/admin/api/sites')]);
+        state.clients = clients.clients || [];
+        state.sites = catalog.containers || [];
+        renderKpis();
+        renderTable();
+      }
+
+      /* ---------- Création ---------- */
+      function openCreateDialog() {
+        const username = UI.input('username', { id: 'cl-username', required: true, mono: true, pattern: '^[a-z0-9._@-]{3,64}$', placeholder: 'jean.dupont', maxlength: 64 });
+        const pwd = passwordField('cl-password');
+        const site = UI.select('tenant_id', [['', '— Plus tard'], ...state.sites.map((s) => [s.site_id, `${s.name}${s.client_name ? ` (${s.client_name})` : ''}`])], { id: 'cl-site' });
+        const errorBox = UI.alert({ tone: 'danger', inline: true, text: '', class: 'ck-form-error' });
+        const submit = UI.btn('Créer le compte', { variant: 'primary', icon: 'check', type: 'submit', attrs: { form: 'form-client' } });
+        const form = h('form', { class: 'ck-form', id: 'form-client' },
+          UI.field('Identifiant de connexion', username, { required: true, help: 'Minuscules, chiffres, « . _ @ - » (3 à 64 caractères).' }),
+          UI.field('Mot de passe initial', pwd.node, { required: true, help: '10 caractères minimum. Haché (bcrypt) par la base : il ne sera plus affiché ensuite.', id: 'cl-password' }),
+          UI.field('Vitrine rattachée', site, { optional: true }),
+          errorBox);
+        const dialog = UI.dialog({ title: 'Nouveau compte client', sub: 'Accès à l\'espace client : vitrine, factures et support.', body: form,
+          footer: [UI.btn('Annuler', { variant: 'ghost', attrs: { 'data-ck-close': '' } }), submit] });
+        pwd.input.value = generatePassword(16);
+        username.focus();
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          if (!form.reportValidity()) return;
+          const values = UI.formValues(form);
+          UI.busy(submit, true, 'Création…');
+          try {
+            await App.api('/admin/api/clients', { method: 'POST', body: { username: values.username.toLowerCase(), password: values.password, tenant_id: values.tenant_id || null } });
+            Cockpit.closeDialog(dialog);
+            showCredentials(values.username.toLowerCase(), values.password);
+            await load();
+          } catch (error) {
+            errorBox.querySelector('.ck-alert__text').textContent = error.message;
+            errorBox.classList.add('is-visible');
+          } finally {
+            UI.busy(submit, false);
+          }
+        });
+      }
+
+      function showCredentials(username, password) {
+        const text = `Espace client : ${window.location.origin}/login\nIdentifiant : ${username}\nMot de passe : ${password}`;
+        UI.dialog({
+          title: 'Compte créé', sub: 'Transmettez ces accès au client par un canal sûr : le mot de passe ne sera plus affiché.', size: 'sm',
+          body: [UI.dl([['Identifiant', h('span', { class: 'ck-mono' }, username)], ['Mot de passe', h('span', { class: 'ck-mono' }, password)]])],
+          footer: [UI.btn('Copier les accès', { icon: 'copy', variant: 'primary', onClick: () => Cockpit.copyText(text).then(() => App.toastOk('Copié', 'Accès copiés dans le presse-papier.')) }),
+            UI.btn('Fermer', { variant: 'ghost', attrs: { 'data-ck-close': '' } })]
+        });
+      }
+
+      /* ---------- Rattachement, mot de passe, suppression ---------- */
+      function openAttachDialog(client) {
+        const choices = state.sites.filter((s) => s.client_id !== client.id);
+        if (!choices.length) {
+          Cockpit.toast({ title: 'Aucune vitrine disponible', message: 'Toutes les vitrines sont déjà rattachées à ce client.', tone: 'info' });
+          return;
+        }
+        const site = UI.select('site_id', choices.map((s) => [s.site_id, `${s.name}${s.client_name ? ` — actuellement ${s.client_name}` : ''}`]), { id: 'at-site' });
+        const submit = UI.btn('Rattacher', { variant: 'primary', icon: 'link', type: 'submit', attrs: { form: 'form-attach' } });
+        const form = h('form', { class: 'ck-form', id: 'form-attach' }, UI.field('Vitrine', site, { help: 'Une vitrine déjà rattachée change de propriétaire.' }));
+        const dialog = UI.dialog({ title: `Rattacher une vitrine à ${client.username}`, size: 'sm', body: form,
+          footer: [UI.btn('Annuler', { variant: 'ghost', attrs: { 'data-ck-close': '' } }), submit] });
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          UI.busy(submit, true);
+          try {
+            await App.api(`/admin/api/sites/${encodeURIComponent(site.value)}`, { method: 'PATCH', body: { client_id: client.id } });
+            Cockpit.closeDialog(dialog);
+            App.toastOk('Vitrine rattachée', `${site.selectedOptions[0].textContent.split(' — ')[0]} → ${client.username}`);
+            await load();
+          } catch (error) {
+            App.toastError(error);
+          } finally {
+            UI.busy(submit, false);
+          }
+        });
+      }
+
+      function openPasswordDialog(client) {
+        const pwd = passwordField('pw-password');
+        const submit = UI.btn('Enregistrer', { variant: 'primary', icon: 'key', type: 'submit', attrs: { form: 'form-password' } });
+        const form = h('form', { class: 'ck-form', id: 'form-password' }, UI.field('Nouveau mot de passe', pwd.node, { required: true, help: '10 caractères minimum.', id: 'pw-password' }));
+        const dialog = UI.dialog({ title: `Mot de passe de ${client.username}`, size: 'sm', body: form,
+          footer: [UI.btn('Annuler', { variant: 'ghost', attrs: { 'data-ck-close': '' } }), submit] });
+        pwd.input.value = generatePassword(16);
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          if (!form.reportValidity()) return;
+          UI.busy(submit, true);
+          try {
+            await App.api(`/admin/api/clients/${encodeURIComponent(client.id)}/password`, { method: 'POST', body: { password: pwd.input.value } });
+            Cockpit.closeDialog(dialog);
+            showCredentials(client.username, pwd.input.value);
+          } catch (error) {
+            App.toastError(error);
+          } finally {
+            UI.busy(submit, false);
+          }
+        });
+      }
+
+      async function removeClient(client) {
+        const ok = await UI.confirm({
+          title: `Supprimer le compte ${client.username} ?`,
+          message: 'Le client perd l\'accès à son espace. Ses vitrines restent en ligne, détachées ; factures et échanges sont conservés.',
+          confirmLabel: 'Supprimer le compte', tone: 'danger', icon: 'trash'
+        });
+        if (!ok) return;
+        try {
+          await App.api(`/admin/api/clients/${encodeURIComponent(client.id)}`, { method: 'DELETE' });
+          App.toastOk('Compte supprimé', client.username);
+          await load();
+        } catch (error) {
+          App.toastError(error);
+        }
+      }
+
+      $('clients-search').addEventListener('input', (event) => {
+        state.query = event.target.value.trim().toLowerCase();
+        renderTable();
+      });
+      $('btn-new-client').addEventListener('click', openCreateDialog);
+
+      App.onRefresh(load);
+      App.boot(async ({ status }) => {
+        status('Chargement des comptes clients…');
+        await load();
+      }, { shell: 'admin' });
+    })();
+    </script>
+  </body>
+</html>

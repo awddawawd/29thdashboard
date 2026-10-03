@@ -1,0 +1,396 @@
+/* ==========================================================================
+   Cockpit DS — 15 · Application
+   Pièces propres au cockpit WaaS (et absentes de la librairie) : compositions
+   des squelettes de chargement, mini-séries temps réel, page de statut, page
+   d'erreur, impression des reçus, squelette de l'aperçu du Studio (l'éditeur
+   lui-même : 16-studio.css, chargée par la seule page /studio).
+   © 2026 29th studio
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Squelettes de chargement — compositions
+   Le HTML de chaque page porte son propre squelette (fragments
+   components/skeleton/*.html) : il est peint dès le premier rendu, sans écran
+   intermédiaire ni scintillement, puis remplacé **en place** par les données
+   dès leur réception (App.boot). La sidebar et la topbar, communes à toutes les
+   pages, ne sont jamais squelettées : elles sont déjà dans le HTML.
+   Les primitives (.ck-skeleton) vivent dans 08-feedback.css.
+   -------------------------------------------------------------------------- */
+
+/* Tableau : les colonnes et lignes au-delà de cols/rows sont masquées — mêmes
+   th/td que UI.table, donc mêmes hauteurs de ligne que le tableau réel. */
+.ck-skeleton-table[data-cols="2"] :is(th, td):nth-child(n + 3),
+.ck-skeleton-table[data-cols="3"] :is(th, td):nth-child(n + 4),
+.ck-skeleton-table[data-cols="4"] :is(th, td):nth-child(n + 5),
+.ck-skeleton-table[data-cols="5"] :is(th, td):nth-child(n + 6),
+.ck-skeleton-table[data-cols="6"] :is(th, td):nth-child(n + 7),
+.ck-skeleton-table[data-cols="7"] :is(th, td):nth-child(n + 8) {
+  display: none;
+}
+
+.ck-skeleton-table[data-rows="3"] tbody tr:nth-child(n + 4),
+.ck-skeleton-table[data-rows="4"] tbody tr:nth-child(n + 5),
+.ck-skeleton-table[data-rows="5"] tbody tr:nth-child(n + 6) {
+  display: none;
+}
+
+/* Graphique : barres de hauteurs variées dans l'aire de tracé, pour occuper
+   exactement la place que la courbe prendra. */
+.ck-skeleton-plot {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ck-space-6);
+}
+
+.ck-skeleton-plot > .ck-skeleton {
+  flex: 1;
+  height: 55%;
+  border-radius: var(--ck-radius-xs) var(--ck-radius-xs) 2px 2px;
+}
+
+.ck-skeleton-plot > .ck-skeleton:nth-child(4n) { height: 78%; }
+.ck-skeleton-plot > .ck-skeleton:nth-child(4n + 1) { height: 42%; }
+.ck-skeleton-plot > .ck-skeleton:nth-child(4n + 2) { height: 92%; }
+.ck-skeleton-plot > .ck-skeleton:nth-child(4n + 3) { height: 64%; }
+
+/* Disponibilité : ruban de segments (Cockpit.charts.uptime) et sa légende */
+.ck-skeleton-bars {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  height: 34px;
+}
+
+.ck-skeleton-bars--sm { height: 22px; }
+
+.ck-skeleton-bars > .ck-skeleton {
+  flex: 1;
+  height: 100%;
+  border-radius: 2px;
+}
+
+.ck-skeleton-legend {
+  flex-wrap: wrap;
+  margin-top: var(--ck-space-8);
+}
+
+/* Corps de carte générique : lignes de texte puis bloc */
+.ck-skeleton-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-10);
+}
+
+/* Jauge de ressource (page Santé) : cadran de 92 px et mini-série bornée */
+.ck-skeleton-gauge {
+  width: 92px;
+  height: 92px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.ck-livespark__plot > .ck-skeleton {
+  height: 100%;
+  min-height: 0;
+}
+
+/* Fil de discussion : les bulles empruntent la largeur de la colonne */
+.ck-skeleton-thread .ck-msg { width: min(78%, 420px); }
+.ck-skeleton-thread .ck-msg > .ck-skeleton--block {
+  min-height: 56px;
+  border-radius: var(--ck-radius-md);
+}
+
+/* Aperçu du Studio : maquette de page dans le cadre de l'appareil */
+.ck-skeleton-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-16);
+  height: 100%;
+  padding: var(--ck-space-20);
+}
+
+.ck-skeleton-preview > .ck-skeleton:nth-child(1) { height: 44px; }
+.ck-skeleton-preview > .ck-skeleton:nth-child(2) { flex: 1; min-height: 140px; }
+
+.ck-skeleton-preview__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--ck-space-16);
+}
+
+.ck-skeleton-preview__grid > .ck-skeleton { height: 96px; }
+
+/* Échec du chargement initial : le squelette se fige (les données peuvent
+   encore arriver et le remplacer) au lieu de clignoter indéfiniment. */
+body.is-boot-error .ck-skeleton {
+  opacity: 0.55;
+  animation: none;
+}
+
+/* --------------------------------------------------------------------------
+   Compléments de mise en page
+   -------------------------------------------------------------------------- */
+.ck-content > .ck-stack {
+  --ck-stack-gap: var(--ck-space-16);
+  width: 100%;
+  max-width: 1480px;
+  margin-inline: auto;
+}
+
+.ck-table td.is-empty {
+  padding: var(--ck-space-32) var(--ck-space-16);
+  color: var(--ck-ink-3);
+  text-align: center;
+}
+
+.ck-table .is-num .ck-table__sub {
+  text-align: right;
+}
+
+.ck-kpi__value .ck-muted {
+  color: var(--ck-ink-4);
+}
+
+/* Filtres de liste au-dessus d'une carte (recherche + compteurs) */
+.ck-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ck-gap-sm);
+}
+
+.ck-toolbar .ck-search {
+  flex: 1 1 280px;
+  max-width: 420px;
+}
+
+/* Dans un dialogue : note d'erreur de formulaire */
+.ck-form-error {
+  display: none;
+}
+
+.ck-form-error.is-visible {
+  display: flex;
+}
+
+/* Métriques « lecture seule » mises en forme pour un balayage rapide */
+.ck-meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ck-space-6) var(--ck-space-10);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-12);
+}
+
+/* --------------------------------------------------------------------------
+   Mini-série temps réel (jauges de la page Santé)
+   -------------------------------------------------------------------------- */
+.ck-livespark {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-6);
+  padding-top: var(--ck-space-12);
+  border-top: var(--ck-border-soft);
+}
+
+.ck-livespark__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ck-space-8);
+}
+
+.ck-livespark__plot {
+  height: 40px;
+}
+
+.ck-gauge-card {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-16);
+}
+
+.ck-gauge-card > .ck-stats {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Console & journaux : hauteur bornée, défilement interne
+   -------------------------------------------------------------------------- */
+.ck-console__output {
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.ck-console__output:empty::before {
+  content: "—";
+  color: var(--ck-ink-4);
+}
+
+.ck-console__prompt > .ck-input-group {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Page d'erreur (404, 5xx) — gabarit Front/components/error.html
+   -------------------------------------------------------------------------- */
+.ck-error-card__code {
+  margin-top: var(--ck-space-8);
+  color: var(--ck-ink-3);
+  font-family: var(--ck-font-mono);
+  font-stretch: var(--ck-mono-stretch);
+  font-size: var(--ck-text-12);
+  letter-spacing: var(--ck-tracking-overline);
+}
+
+/* --------------------------------------------------------------------------
+   Page de statut publique (/status)
+   -------------------------------------------------------------------------- */
+.ck-status-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-24);
+  width: min(960px, 100% - var(--ck-page-x) * 2);
+  margin: 0 auto;
+  padding: var(--ck-space-40) 0 var(--ck-space-64);
+}
+
+.ck-status-page__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ck-space-16);
+  padding-bottom: var(--ck-space-24);
+  border-bottom: var(--ck-border);
+}
+
+.ck-status-hero {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-16);
+  padding: var(--ck-space-20) var(--ck-space-24);
+  border: 1px solid var(--ck-good-line);
+  border-radius: var(--ck-radius-lg);
+  background: var(--ck-good-soft);
+  color: var(--ck-good-ink);
+}
+
+.ck-status-hero[data-tone="warn"] {
+  border-color: var(--ck-warn-line);
+  background: var(--ck-warn-soft);
+  color: var(--ck-warn-ink);
+}
+
+.ck-status-hero[data-tone="danger"] {
+  border-color: var(--ck-danger-line);
+  background: var(--ck-danger-soft);
+  color: var(--ck-danger-ink);
+}
+
+.ck-status-hero[data-tone="neutral"] {
+  border-color: var(--ck-line);
+  background: var(--ck-surface-2);
+  color: var(--ck-ink-2);
+}
+
+.ck-status-hero__icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.ck-status-hero__title {
+  color: inherit;
+  font-size: var(--ck-text-page);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.ck-status-hero__sub {
+  color: inherit;
+  font-size: var(--ck-text-12);
+  opacity: 0.85;
+}
+
+.ck-status-service {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-10);
+  padding: var(--ck-space-16) var(--ck-inset);
+  border-bottom: var(--ck-border-soft);
+}
+
+.ck-status-service:last-child {
+  border-bottom: 0;
+}
+
+.ck-status-page__foot {
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-12);
+  text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+   Impression d'un reçu : seule la zone #print-root est imprimée
+   -------------------------------------------------------------------------- */
+#print-root {
+  display: none;
+}
+
+@media print {
+  body > :not(#print-root) {
+    display: none !important;
+  }
+
+  #print-root {
+    display: block;
+    padding: 24px;
+    color: #000;
+  }
+}
+
+/* Emplacements rendus par JS dans une grille (messagerie) : le contenu devient l'élément de grille */
+[data-slot] {
+  display: contents;
+}
+
+/* Entrées des graphiques en CSS (indépendantes de requestAnimationFrame, suspendu en arrière-plan) :
+   transform pour les barres, tracé de l'arc pour les jauges. Remplissage « backwards » uniquement :
+   les mises à jour temps réel restent animées par les transitions de la librairie. */
+.ck-barlist__bar {
+  transform-origin: left center;
+  animation: ck-bar-in var(--ck-dur-4) var(--ck-ease-out) backwards;
+}
+
+.ck-gauge__arc {
+  animation: ck-arc-in var(--ck-dur-4) var(--ck-ease-out) backwards;
+}
+
+@keyframes ck-bar-in {
+  from { transform: scaleX(0); }
+}
+
+@keyframes ck-arc-in {
+  from { stroke-dashoffset: var(--arc); }
+}
+
+/* Attribution discrète en pied de sidebar */
+.ck-sidebar__credit {
+  margin-top: var(--ck-space-2);
+  color: var(--ck-ink-4);
+  font-size: 10px;
+  line-height: 14px;
+  text-align: center;
+}
+
+.ck-sidebar__credit a {
+  color: var(--ck-ink-3);
+}

@@ -1,0 +1,143 @@
+/* ==========================================================================
+   Cockpit DS — 10 · Navigation secondaire
+   Onglets, fil d'Ariane, pagination. (Sidebar & topbar : 03-layout ;
+   contrôle segmenté : 05-forms.)
+   ========================================================================== */
+
+/* Onglets soulignés ---------------------------------------------------------- */
+.ck-tabs {
+  display: flex;
+  gap: var(--ck-space-24);
+  border-bottom: var(--ck-border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ck-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.ck-tabs__tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ck-space-6);
+  flex-shrink: 0;
+  height: var(--ck-h-lg);
+  padding: 0 var(--ck-space-2);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-13);
+  font-weight: var(--ck-weight-medium);
+  white-space: nowrap;
+  transition: color var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-tabs__tab::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: transparent;
+  transition: background-color var(--ck-dur-2) var(--ck-ease-out);
+}
+
+.ck-tabs__tab:hover {
+  color: var(--ck-ink-1);
+  text-decoration: none;
+}
+
+.ck-tabs__tab[aria-selected="true"],
+.ck-tabs__tab.is-active {
+  color: var(--ck-ink-1);
+  font-weight: var(--ck-weight-semibold);
+}
+
+.ck-tabs__tab[aria-selected="true"]::after,
+.ck-tabs__tab.is-active::after {
+  background: var(--ck-accent);
+}
+
+.ck-tabs__tab:focus-visible {
+  outline-offset: -2px;
+}
+
+.ck-tab-panel[hidden] {
+  display: none;
+}
+
+/* Fil d'Ariane --------------------------------------------------------------- */
+.ck-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ck-space-6);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+  list-style: none;
+}
+
+.ck-breadcrumb a {
+  color: var(--ck-ink-3);
+}
+
+.ck-breadcrumb a:hover {
+  color: var(--ck-ink-1);
+}
+
+.ck-breadcrumb [aria-current="page"] {
+  color: var(--ck-ink-1);
+  font-weight: var(--ck-weight-semibold);
+}
+
+.ck-breadcrumb__sep {
+  width: 12px;
+  height: 12px;
+  color: var(--ck-ink-4);
+}
+
+/* Pagination ----------------------------------------------------------------- */
+.ck-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ck-space-12);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-12);
+}
+
+.ck-pagination__pages {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-4);
+}
+
+.ck-page {
+  display: inline-grid;
+  place-items: center;
+  min-width: var(--ck-h-sm);
+  height: var(--ck-h-sm);
+  padding: 0 var(--ck-space-8);
+  border-radius: var(--ck-radius-sm);
+  color: var(--ck-ink-2);
+  font-size: var(--ck-text-12);
+  font-weight: var(--ck-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  transition: background-color var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-page:hover {
+  background: var(--ck-surface-3);
+  color: var(--ck-ink-1);
+  text-decoration: none;
+}
+
+.ck-page[aria-current="page"] {
+  background: var(--ck-accent-soft);
+  color: var(--ck-accent-ink);
+  box-shadow: inset 0 0 0 1px var(--ck-accent-100);
+}

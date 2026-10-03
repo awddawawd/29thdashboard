@@ -1,0 +1,268 @@
+/* ==========================================================================
+   Cockpit DS — 01 · Tokens
+   Source unique de vérité : couleurs, typographie, espacements, rayons,
+   élévations, mouvement, grille. Aucune valeur « magique » ailleurs.
+   © 2026 29th studio
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* ------------------------------------------------------------------
+     Neutres — gris bleutés sur-mesure (teinte OKLCH 260–264)
+     ------------------------------------------------------------------ */
+  --ck-white: #ffffff;
+  --ck-canvas: #f9fafc;          /* fond de l'application */
+  --ck-surface: #ffffff;         /* cartes, widgets, sidebar, topbar */
+  --ck-surface-2: #f5f6f9;       /* en-têtes de tableau, pieds de carte, zones en retrait */
+  --ck-surface-3: #eef0f4;       /* survols, pistes, segments inactifs */
+
+  --ck-line-soft: #e9ebef;       /* séparateurs internes (lignes de tableau, listes) */
+  --ck-line: #dfe2e7;            /* contour des conteneurs */
+  --ck-line-strong: #cdd1d8;     /* contour appuyé, boutons secondaires */
+  --ck-line-control: #8c9199;    /* contour des champs de saisie — 3.2:1 */
+
+  --ck-ink-1: #0f1623;           /* titres, valeurs — 18.1:1 */
+  --ck-ink-2: #39404d;           /* texte courant — 10.4:1 */
+  --ck-ink-3: #636975;           /* texte secondaire, méta — 5.5:1 */
+  --ck-ink-4: #8c9199;           /* icônes, désactivé — 3.2:1 (jamais pour du texte porteur de sens) */
+
+  /* ------------------------------------------------------------------
+     Accent — Cobalt (unique couleur de marque, ≤ 10 % de la surface)
+     ------------------------------------------------------------------ */
+  --ck-accent-50: #f1f6ff;
+  --ck-accent-100: #e4edff;
+  --ck-accent-200: #c7daff;
+  --ck-accent-300: #9dbdff;
+  --ck-accent-400: #6293ff;
+  --ck-accent-500: #336cf5;
+  --ck-accent-600: #2555e6;      /* base — texte blanc 6.0:1 */
+  --ck-accent-700: #2144c6;
+  --ck-accent-800: #1d369e;
+  --ck-accent-900: #152569;
+
+  --ck-accent: var(--ck-accent-600);
+  --ck-accent-hover: var(--ck-accent-700);
+  --ck-accent-active: var(--ck-accent-800);
+  --ck-accent-ink: var(--ck-accent-700);   /* texte accent sur fond teinté — 7.2:1 */
+  --ck-accent-soft: var(--ck-accent-50);
+  --ck-accent-line: var(--ck-accent-200);
+  --ck-on-accent: #ffffff;
+
+  /* ------------------------------------------------------------------
+     Tons fonctionnels — {ton} = pastille/icône · -ink = texte AA
+     -soft = fond teinté · -line = contour teinté
+     ------------------------------------------------------------------ */
+  --ck-good: #0c994f;
+  --ck-good-ink: #0a6d37;
+  --ck-good-soft: #e7faec;
+  --ck-good-line: #b3e8c3;
+
+  --ck-warn: #e79700;
+  --ck-warn-ink: #92500b;
+  --ck-warn-soft: #fff6e1;
+  --ck-warn-line: #f8d691;
+
+  --ck-danger: #db3330;
+  --ck-danger-ink: #b01f1f;
+  --ck-danger-soft: #fff1f0;
+  --ck-danger-line: #ffcac9;
+
+  --ck-info: var(--ck-accent-600);
+  --ck-info-ink: var(--ck-accent-700);
+  --ck-info-soft: var(--ck-accent-50);
+  --ck-info-line: var(--ck-accent-200);
+
+  /* ------------------------------------------------------------------
+     Data-viz — ordre catégoriel figé (validé daltonisme, voir doc)
+     ------------------------------------------------------------------ */
+  --ck-series-1: #2555e6;
+  --ck-series-2: #eb6834;
+  --ck-series-3: #1baf7a;
+  --ck-series-4: #eda100;
+  --ck-series-5: #e87ba4;
+  --ck-series-6: #008300;
+  --ck-series-7: #4a3aa7;
+  --ck-series-8: #e34948;
+  --ck-series-muted: #b4b9c2;    /* série de contexte (mise en retrait) */
+
+  /* Rampe séquentielle (magnitude) — une teinte, clair → foncé */
+  --ck-seq-0: var(--ck-surface-3);
+  --ck-seq-1: #dfeaff;
+  --ck-seq-2: #bad1ff;
+  --ck-seq-3: #8eb3ff;
+  --ck-seq-4: #6293ff;
+  --ck-seq-5: #3971f8;
+  --ck-seq-6: #2653d8;
+  --ck-seq-7: #1c3baa;
+
+  --ck-chart-grid: var(--ck-line-soft);
+  --ck-chart-axis: var(--ck-line-strong);
+  --ck-chart-label: var(--ck-ink-3);
+  --ck-chart-cursor: var(--ck-ink-4);
+
+  /* ------------------------------------------------------------------
+     Typographie
+     ------------------------------------------------------------------ */
+  --ck-font-sans: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ck-font-mono: "Martian Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --ck-mono-stretch: 87.5%;      /* Martian Mono resserrée : dense sans perdre sa signature */
+  --ck-figure-stretch: 92%;      /* chiffres clés légèrement condensés */
+
+  /* Échelle — 8 tailles. UI fixe, titres & chiffres fluides */
+  --ck-text-11: 11px;            /* surtitres (capitales), badges */
+  --ck-text-12: 12px;            /* méta, légendes, aide, boutons compacts */
+  --ck-text-13: 13px;            /* texte d'interface par défaut */
+  --ck-text-14: 14px;            /* titres de carte, texte appuyé */
+  --ck-text-16: 16px;            /* titres de section, de dialogue */
+  --ck-text-page: clamp(17px, 0.45vw + 12px, 20px);   /* titre de page */
+  --ck-text-figure: clamp(22px, 0.8vw + 14px, 30px);  /* valeur KPI */
+  --ck-text-hero: clamp(40px, 2.4vw + 16px, 56px);    /* chiffre héros — un seul par vue */
+
+  --ck-leading-tight: 1.1;
+  --ck-leading-title: 1.3;
+  --ck-leading-body: 1.5;
+
+  --ck-tracking-display: -0.03em;
+  --ck-tracking-title: -0.015em;
+  --ck-tracking-overline: 0.08em;
+
+  --ck-weight-regular: 400;
+  --ck-weight-medium: 500;
+  --ck-weight-semibold: 600;
+  --ck-weight-bold: 700;
+
+  /* ------------------------------------------------------------------
+     Espacements — la valeur du token = les pixels (grille de 4, demi-pas 2/6/10)
+     ------------------------------------------------------------------ */
+  --ck-space-2: 2px;
+  --ck-space-4: 4px;
+  --ck-space-6: 6px;
+  --ck-space-8: 8px;
+  --ck-space-10: 10px;
+  --ck-space-12: 12px;
+  --ck-space-16: 16px;
+  --ck-space-20: 20px;
+  --ck-space-24: 24px;
+  --ck-space-32: 32px;
+  --ck-space-40: 40px;
+  --ck-space-48: 48px;
+  --ck-space-64: 64px;
+  --ck-space-96: 96px;
+
+  /* Rôles sémantiques — c'est eux que les composants consomment */
+  --ck-inset-sm: var(--ck-space-12);  /* marge interne compacte */
+  --ck-inset: var(--ck-space-16);     /* marge interne des cartes & widgets */
+  --ck-inset-lg: var(--ck-space-24);  /* dialogues, grandes surfaces */
+  --ck-gap-xs: var(--ck-space-6);     /* icône ↔ libellé */
+  --ck-gap-sm: var(--ck-space-8);     /* contrôles côte à côte */
+  --ck-gap: var(--ck-space-12);       /* gouttière entre cartes & widgets */
+  --ck-section-gap: var(--ck-space-24);
+  --ck-page-x: 28px;                  /* marge latérale du contenu */
+  --ck-page-y: var(--ck-space-24);
+
+  /* ------------------------------------------------------------------
+     Dimensions
+     ------------------------------------------------------------------ */
+  --ck-h-xs: 24px;               /* hauteurs communes boutons / champs / segments */
+  --ck-h-sm: 28px;
+  --ck-h-md: 32px;
+  --ck-h-lg: 40px;
+  --ck-topbar-h: 56px;           /* = hauteur du bloc marque de la sidebar */
+  --ck-row-h: 44px;              /* ligne de tableau */
+  --ck-row-h-compact: 36px;
+  --ck-head-h: 36px;             /* en-tête de tableau */
+  --ck-icon-sm: 14px;
+  --ck-icon-md: 16px;
+  --ck-icon-lg: 20px;
+  --ck-icon-stroke: 1.75;
+
+  /* ------------------------------------------------------------------
+     Rayons — règle d'imbrication : rayon intérieur = extérieur − marge
+     ------------------------------------------------------------------ */
+  --ck-radius-xs: 4px;           /* étiquettes, cases à cocher, extrémités de barres */
+  --ck-radius-sm: 6px;           /* boutons, champs, liens de navigation, items de menu */
+  --ck-radius-md: 10px;          /* cartes, widgets, menus, toasts */
+  --ck-radius-lg: 14px;          /* dialogues, cadres, grands panneaux */
+  --ck-radius-pill: 999px;       /* badges, pastilles, interrupteurs */
+
+  /* ------------------------------------------------------------------
+     Bordures
+     ------------------------------------------------------------------ */
+  --ck-border-width: 1px;
+  --ck-border: 1px solid var(--ck-line);
+  --ck-border-soft: 1px solid var(--ck-line-soft);
+  --ck-border-strong: 1px solid var(--ck-line-strong);
+
+  /* ------------------------------------------------------------------
+     Élévation — ombres froides, diffuses, jamais de halo coloré
+     ------------------------------------------------------------------ */
+  --ck-shadow-xs: 0 1px 2px rgba(15, 22, 35, 0.04);
+  --ck-shadow-sm: 0 1px 2px rgba(15, 22, 35, 0.05), 0 1px 3px rgba(15, 22, 35, 0.05);
+  --ck-shadow-md: 0 4px 10px -2px rgba(15, 22, 35, 0.08), 0 2px 4px -2px rgba(15, 22, 35, 0.05);
+  --ck-shadow-lg: 0 12px 28px -6px rgba(15, 22, 35, 0.14), 0 4px 10px -4px rgba(15, 22, 35, 0.06);
+  --ck-shadow-xl: 0 28px 56px -14px rgba(15, 22, 35, 0.24), 0 8px 18px -8px rgba(15, 22, 35, 0.08);
+  --ck-shadow-primary: 0 1px 2px rgba(37, 85, 230, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+
+  --ck-focus-width: 2px;
+  --ck-focus-color: var(--ck-accent-600);
+  --ck-focus-ring: 0 0 0 3px rgba(37, 85, 230, 0.18);
+  --ck-danger-ring: 0 0 0 3px rgba(219, 51, 48, 0.16);
+
+  /* ------------------------------------------------------------------
+     Mouvement — jamais d'easing linéaire (sauf rotation des spinners)
+     ------------------------------------------------------------------ */
+  --ck-dur-1: 120ms;             /* couleur, survol */
+  --ck-dur-2: 200ms;             /* petits déplacements */
+  --ck-dur-3: 320ms;             /* panneaux, toasts, dialogues */
+  --ck-dur-4: 520ms;             /* reflux de grille, tracé de courbe */
+  --ck-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ck-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ck-ease-snap: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  /* ------------------------------------------------------------------
+     Profondeur
+     ------------------------------------------------------------------ */
+  --ck-z-sticky: 10;
+  --ck-z-sidebar: 20;
+  --ck-z-dropdown: 50;
+  --ck-z-overlay: 90;
+  --ck-z-dialog: 100;
+  --ck-z-toast: 200;
+  --ck-z-tooltip: 300;
+
+  /* ------------------------------------------------------------------
+     Grille — cadre à 7 colonnes : sidebar = 1 colonne, widgets = 6
+     Cellule unitaire au ratio 2:1, gouttière = 2 × marge
+     (la largeur de sidebar est calculée par .ck-app, voir 03-layout)
+     ------------------------------------------------------------------ */
+  --ck-frame-cols: 7;
+  --ck-grid-cols: 6;
+  --ck-grid-margin: 6px;         /* marge GridStack → gouttière de 12px (= --ck-gap) */
+  --ck-cell-ratio: 2;
+  --ck-grid-row-max: 120px;      /* pas de rangée plafonné en mode 2 colonnes (conteneur < 760px) */
+  --ck-scrollbar-w: 0px;         /* mesurée par cockpit.js pour un alignement au pixel */
+}
+
+@media (max-width: 1100px) {
+  :root {
+    --ck-page-x: 20px;
+    --ck-page-y: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --ck-page-x: 16px;
+    --ck-page-y: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ck-dur-1: 0.01ms;
+    --ck-dur-2: 0.01ms;
+    --ck-dur-3: 0.01ms;
+    --ck-dur-4: 0.01ms;
+  }
+}

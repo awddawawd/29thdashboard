@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <title>Support studio · Espace client</title>
+    <meta name="description" content="Vos échanges avec le studio : demandes de modification, questions et suivi.">
+    <!-- @include head.html -->
+  </head>
+  <body>
+    <!-- @include body-start.html brand="Espace client" -->
+
+    <div class="ck-app" id="portal-app">
+      <!-- @include portal/sidebar.html -->
+      <div class="ck-scrim"></div>
+
+      <div class="ck-main">
+        <!-- @include portal/topbar.html title="Support studio" -->
+
+        <main class="ck-content" id="main" tabindex="-1">
+          <div class="ck-stack" id="support-root">
+            <div class="ck-inbox">
+              <div id="support-list" data-slot>
+                <!-- @include skeleton/conversations.html -->
+              </div>
+              <div id="support-thread" data-slot>
+                <!-- @include skeleton/thread.html -->
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div id="modal-container"></div>
+
+    <!-- @include scripts.html -->
+    <script>
+    (function () {
+      'use strict';
+      const { h } = UI;
+      const $ = (id) => document.getElementById(id);
+      const state = { site: null, tickets: [], selected: App.param('ticket'), thread: null, composing: App.param('new') === '1' };
+
+      const base = () => App.withSite('/portal/support', state.site.site_id);
+      const hrefFor = (t) => `${base()}&ticket=${encodeURIComponent(t.id)}`;
+
+      function renderList() {
+        UI.replace($('support-list'), Views.conversationList({
+          tickets: state.tickets, selectedId: state.composing ? null : state.selected, hrefFor, title: 'Vos demandes',
+          metaFor: (t) => `${t.message_count} message${t.message_count > 1 ? 's' : ''}`,
+          onSelect: (t) => select(t.id),
+          newAction: UI.btn('Nouvelle', { icon: 'plus', variant: 'primary', size: 'xs', onClick: compose }),
+          emptyText: 'Vos échanges avec le studio apparaîtront ici.'
+        }));
+      }
+
+      function newTicketCard() {
+        const subject = UI.input('subject', { id: 't-subject', required: true, maxlength: 200, placeholder: 'Ex. : mettre à jour les horaires d\'été' });
+        const priority = UI.select('priority', [['normal', 'Normale — prise en charge sous 24 h'], ['urgent', 'Urgente — blocage ou anomalie en ligne']], { id: 't-priority' });
+        const body = UI.textarea('body', { id: 't-body', rows: 6, required: true, maxlength: 5000, placeholder: 'Pages concernées, textes à modifier, questions…' });
+        const submit = UI.btn('Envoyer la demande', { icon: 'send', variant: 'primary', type: 'submit' });
+        const form = h('form', { class: 'ck-form' },
+          UI.field('Sujet de votre demande', subject, { required: true }),
+          UI.field('Priorité', priority),
+          UI.field('Description détaillée', body, { required: true }),
+          h('div', { class: 'ck-form-actions' },
+            state.tickets.length ? UI.btn('Annuler', { variant: 'ghost', onClick: () => { state.composing = false; App.setParam('new', null); renderThread(); renderList(); } }) : null,
+            submit));
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          if (!form.reportValidity()) return;
+          UI.busy(submit, true, 'Envoi…');
+          try {
+            const res = await App.api(`/api/v1/sites/${encodeURIComponent(state.site.site_id)}/tickets`, { method: 'POST', body: UI.formValues(form) });
+            App.toastOk('Demande envoyée', 'Le studio vous répond ici même.');
+            state.composing = false;
+            App.setParam('new', null);
+            await loadList();
+            await select(res.ticket.id);
+          } catch (error) {
+            App.toastError(error, 'Envoi impossible');
+          } finally {
+            UI.busy(submit, false);
+          }
+        });
+        window.requestAnimationFrame(() => subject.focus());
+        return h('article', { class: 'ck-card ck-thread' },
+          UI.cardHeader('Nouvelle demande au studio', 'Mise à jour de contenu, photos, horaires ou question technique.'),
+          h('div', { class: 'ck-card__body', style: { overflow: 'auto' } }, form));
+      }
+
+      function renderThread() {
+        const box = $('support-thread');
+        if (state.composing || !state.tickets.length) {
+          UI.replace(box, newTicketCard());
+          return;
+        }
+        if (!state.thread) {
+          UI.replace(box, Views.emptyThread('Aucune demande sélectionnée', 'Choisissez une conversation dans la liste.'));
+          return;
+        }
+        const t = state.thread;
+        UI.replace(box, Views.threadCard(t, {
+          subtitle: `Créée le ${UI.fmt.date(t.created_at)}`,
+          placeholder: 'Écrivez votre message à l\'équipe du studio… (Ctrl+Entrée pour envoyer)',
+          hint: 'Le studio est notifié immédiatement.',
+          resolveLabel: 'Marquer comme résolue', reopenLabel: 'Rouvrir la demande',
+          onReply: async (body) => {
+            const res = await App.api(`/api/v1/tickets/${encodeURIComponent(t.id)}/messages`, { method: 'POST', body: { body } });
+            state.thread = res.ticket;
+            renderThread();
+            await loadList();
+          },
+          onToggle: async (status) => {
+            try {
+              const res = await App.api(`/api/v1/tickets/${encodeURIComponent(t.id)}/status`, { method: 'POST', body: { status } });
+              state.thread = res.ticket;
+              renderThread();
+              await loadList();
+            } catch (error) { App.toastError(error); }
+          }
+        }));
+      }
+
+      function compose() {
+        state.composing = true;
+        App.setParam('new', '1');
+        renderList();
+        renderThread();
+      }
+
+      async function select(id) {
+        state.composing = false;
+        state.selected = id;
+        App.setParam('new', null);
+        App.setParam('ticket', id);
+        renderList();
+        try {
+          state.thread = (await App.api(`/api/v1/tickets/${encodeURIComponent(id)}`)).ticket;
+        } catch (error) {
+          state.thread = null;
+          if (error.status !== 404) App.toastError(error);
+        }
+        renderThread();
+      }
+
+      async function loadList() {
+        const data = await App.api(`/api/v1/sites/${encodeURIComponent(state.site.site_id)}/tickets`);
+        state.tickets = data.tickets;
+        if (!state.selected && state.tickets.length) state.selected = state.tickets[0].id;
+        renderList();
+      }
+
+      async function refresh() {
+        await loadList();
+        const typing = document.activeElement && ['support-reply', 't-body', 't-subject'].includes(document.activeElement.id);
+        if (state.selected && !state.composing && !typing) {
+          const res = await App.api(`/api/v1/tickets/${encodeURIComponent(state.selected)}`).catch(() => null);
+          if (res && JSON.stringify(res.ticket.messages) !== JSON.stringify((state.thread || {}).messages)) {
+            state.thread = res.ticket;
+            renderThread();
+          }
+        }
+      }
+
+      App.onRefresh(refresh);
+      App.boot(async ({ shell, status }) => {
+        if (!shell.site) {
+          UI.replace($('support-root'), UI.card({ body: UI.empty({ title: 'Aucune vitrine rattachée', desc: 'La messagerie s\'ouvre dès la mise en service de votre site.', icon: 'message' }) }));
+          return;
+        }
+        state.site = shell.site;
+        status('Chargement de vos échanges…');
+        await loadList();
+        if (state.selected && !state.composing) await select(state.selected);
+        else renderThread();
+      }, { shell: 'portal' }).then((shell) => {
+        if (shell && shell.site) App.poll(() => refresh().catch(() => {}), 20000);
+      });
+    })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <title>Santé de l'infrastructure · Cockpit WaaS</title>
+    <meta name="description" content="Supervision : disponibilité 90 jours, sondes par service, charge de l'hôte en temps réel, sous-systèmes et journal des sondes.">
+    <!-- @include head.html -->
+  </head>
+  <body>
+    <!-- @include body-start.html brand="Cockpit WaaS" -->
+
+    <div class="ck-app" id="cockpit-app">
+      <!-- @include admin/sidebar.html -->
+      <div class="ck-scrim"></div>
+
+      <div class="ck-main">
+        <!-- @include admin/topbar.html title="Santé de l'infrastructure" -->
+
+        <main class="ck-content" id="main" tabindex="-1">
+          <div class="ck-stack">
+            <div class="ck-page-head">
+              <div class="ck-page-head__main">
+                <h2 class="ck-page-head__title">Supervision <span id="health-status-badge"><span class="ck-skeleton ck-skeleton--pill"></span></span></h2>
+                <div class="ck-page-head__meta" id="health-meta"><span class="ck-skeleton ck-skeleton--text ck-skeleton--w35"></span></div>
+              </div>
+              <div class="ck-page-head__actions">
+                <span class="ck-live ck-live--sm is-idle" id="health-live" title="Mesures de l'hôte rafraîchies toutes les 3 secondes">
+                  <span class="ck-live__dot"></span><span id="health-live-text">Connexion…</span>
+                </span>
+                <button type="button" class="ck-btn ck-btn--secondary ck-btn--sm" id="btn-probe-all">
+                  <svg class="ck-icon" aria-hidden="true"><use href="#i-refresh"/></svg><span>Sonder maintenant</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="ck-stack" id="health-incidents" style="--ck-stack-gap: var(--ck-space-12)" hidden></div>
+
+            <article class="ck-card">
+              <header class="ck-card__header">
+                <div class="ck-card__heading">
+                  <h2 class="ck-card__title">Santé globale de l'infrastructure</h2>
+                  <p class="ck-card__subtitle" id="health-specs"><span class="ck-skeleton ck-skeleton--text ck-skeleton--w55"></span></p>
+                </div>
+                <div class="ck-card__actions" id="health-hero-actions">
+                  <span class="ck-skeleton ck-skeleton--pill"></span>
+                  <span class="ck-skeleton ck-skeleton--pill"></span>
+                </div>
+              </header>
+              <div class="ck-card__body" id="health-hero">
+                <div class="ck-stack" style="--ck-stack-gap: var(--ck-space-16)">
+                  <!-- @include skeleton/stats.html -->
+                  <!-- @include skeleton/bars.html -->
+                  <!-- @include skeleton/legend.html -->
+                </div>
+              </div>
+            </article>
+
+            <article class="ck-card">
+              <header class="ck-card__header">
+                <div class="ck-card__heading">
+                  <h2 class="ck-card__title">Disponibilité par service — 90 jours</h2>
+                  <p class="ck-card__subtitle" id="health-services-sub"><span class="ck-skeleton ck-skeleton--text ck-skeleton--w45"></span></p>
+                </div>
+                <div class="ck-card__actions" id="health-services-actions">
+                  <span class="ck-skeleton ck-skeleton--pill"></span>
+                </div>
+              </header>
+              <div id="health-services">
+                <!-- @include skeleton/table.html cols="6" rows="4" -->
+              </div>
+            </article>
+
+            <div class="ck-kpi-row" id="health-kpis" aria-label="Indicateurs de supervision">
+              <!-- @include skeleton/kpis.html -->
+            </div>
+
+            <div class="ck-auto-grid" style="--ck-min: 280px" id="health-gauges">
+              <!-- @include skeleton/gauge.html -->
+              <!-- @include skeleton/gauge.html -->
+              <!-- @include skeleton/gauge.html -->
+              <!-- @include skeleton/gauge.html -->
+            </div>
+
+            <article class="ck-card">
+              <header class="ck-card__header">
+                <div class="ck-card__heading">
+                  <h2 class="ck-card__title" id="timeline-title">Charge de l'hôte</h2>
+                  <p class="ck-card__subtitle" id="timeline-sub"><span class="ck-skeleton ck-skeleton--text ck-skeleton--w35"></span></p>
+                </div>
+                <div class="ck-card__actions">
+                  <div class="ck-segmented ck-segmented--sm" data-ck-segmented role="group" aria-label="Période" id="timeline-period">
+                    <button type="button" class="ck-segmented__item" data-value="1h" aria-pressed="false">1 h</button>
+                    <button type="button" class="ck-segmented__item" data-value="24h" aria-pressed="true">24 h</button>
+                    <button type="button" class="ck-segmented__item" data-value="7d" aria-pressed="false">7 jours</button>
+                    <button type="button" class="ck-segmented__item" data-value="30d" aria-pressed="false">30 jours</button>
+                  </div>
+                </div>
+              </header>
+              <div class="ck-card__body" id="timeline-chart">
+                <!-- @include skeleton/chart.html -->
+              </div>
+            </article>
+
+            <div class="ck-auto-grid" style="--ck-min: 380px">
+              <article class="ck-card">
+                <header class="ck-card__header">
+                  <div class="ck-card__heading">
+                    <h2 class="ck-card__title">Répartition de la mémoire vive</h2>
+                    <p class="ck-card__subtitle">Conteneurs des vitrines, cache système et réserve</p>
+                  </div>
+                </header>
+                <div class="ck-card__body" id="health-memory">
+                  <!-- @include skeleton/panel.html -->
+                </div>
+              </article>
+              <article class="ck-card">
+                <header class="ck-card__header">
+                  <div class="ck-card__heading">
+                    <h2 class="ck-card__title">Conteneurs les plus gourmands</h2>
+                    <p class="ck-card__subtitle">Empreinte RAM instantanée par vitrine</p>
+                  </div>
+                </header>
+                <div class="ck-card__body" id="health-top">
+                  <!-- @include skeleton/panel.html -->
+                </div>
+              </article>
+            </div>
+
+            <article class="ck-card">
+              <header class="ck-card__header">
+                <div class="ck-card__heading">
+                  <h2 class="ck-card__title">Sous-systèmes &amp; démons</h2>
+                  <p class="ck-card__subtitle">Intégrité, connectivité et temps de réponse des briques de la plateforme</p>
+                </div>
+                <div class="ck-card__actions" id="health-subsystems-badge">
+                  <span class="ck-skeleton ck-skeleton--pill"></span>
+                </div>
+              </header>
+              <div id="health-subsystems">
+                <!-- @include skeleton/table.html cols="5" -->
+              </div>
+            </article>
+
+            <article class="ck-card">
+              <header class="ck-card__header">
+                <div class="ck-card__heading">
+                  <h2 class="ck-card__title">Journal des sondes</h2>
+                  <p class="ck-card__subtitle">Requêtes réellement exécutées par le serveur (aucun outil externe)</p>
+                </div>
+              </header>
+              <div id="health-probes">
+                <!-- @include skeleton/table.html cols="6" -->
+              </div>
+            </article>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div id="modal-container"></div>
+
+    <!-- @include scripts.html -->
+    <script>
+    (function () {
+      'use strict';
+      const { h, fmt } = UI;
+      const $ = (id) => document.getElementById(id);
+      const LIVE_POINTS = 20;           // 20 × 3 s = 60 s de série temps réel
+      const live = { cpu_percent: [], ram_percent: [], disk_io_rate_mb: [], net_io_rate_mb: [] };
+      const gaugeNodes = {};
+      let overview = null;
+      let period = '24h';
+
+      /* ---------- Incidents & synthèse ---------- */
+      function renderIncidents(incidents) {
+        const box = $('health-incidents');
+        box.hidden = !incidents.length;
+        UI.replace(box, incidents.map((inc) => UI.alert({
+          tone: inc.level === 'info' ? 'info' : inc.level, bar: inc.level !== 'info', icon: inc.icon,
+          title: `[${inc.subsystem}] ${inc.title}`,
+          text: `${inc.message} → ${inc.recommendation}`,
+          actions: inc.href ? [UI.btn(inc.action || 'Ouvrir', { href: inc.href, size: 'sm', variant: inc.level === 'danger' ? 'primary' : 'secondary' })] : null
+        })));
+      }
+
+      function renderStatus(d) {
+        const actionable = d.incidents.filter((i) => i.level !== 'info');
+        const danger = actionable.some((i) => i.level === 'danger');
+        const badge = actionable.length
+          ? UI.badge(`${actionable.length} alerte${actionable.length > 1 ? 's' : ''} active${actionable.length > 1 ? 's' : ''}`, danger ? 'danger' : 'warn')
+          : UI.badge('Tous les systèmes opérationnels', 'good');
+        UI.replace($('health-status-badge'), badge);
+        UI.replace($('health-meta'), h('span', null, `Dernière collecte ${fmt.relative(d.collected_at)}`),
+          h('span', { 'aria-hidden': 'true' }, '·'), h('span', { class: 'ck-mono' }, `passe complète en ${fmt.number(d.probe_duration_ms)} ms`));
+        UI.replace($('health-hero-actions'), badge.cloneNode(true), UI.tag(d.host.hostname || 'Hôte', { mono: true, icon: 'server' }));
+      }
+
+      function renderHero(d) {
+        const host = d.host;
+        const sla = d.sla;
+        $('health-specs').textContent = [
+          host.cpu_logical ? `${host.cpu_logical} vCPU` : null,
+          host.ram_total_gb != null ? `${fmt.decimal(host.ram_total_gb)} Go RAM` : null,
+          host.disk_total_gb != null ? `${fmt.decimal(host.disk_total_gb)} Go (${host.disk_fstype || host.disk_mount})` : null,
+          host.source === 'psutil' ? 'mesures psutil' : host.source === 'system' ? 'mesures système (psutil absent)' : `mesures ${host.source}`
+        ].filter(Boolean).join(' · ');
+        const bars = h('div');
+        Cockpit.charts.uptime(bars, sla.series || [], { ariaLabel: 'Disponibilité globale sur 90 jours' });
+        const actionable = d.incidents.filter((i) => i.level !== 'info').length;
+        UI.replace($('health-hero'), h('div', { class: 'ck-stack', style: { '--ck-stack-gap': 'var(--ck-space-16)' } },
+          UI.stats([
+            ['Disponibilité glissante', sla.uptime != null ? fmt.percent(sla.uptime, 3) : '—'],
+            ['Temps de réponse moyen', d.kpis.avg_latency_ms != null ? `${fmt.decimal(d.kpis.avg_latency_ms)} ms` : '—'],
+            ['Uptime de l\'hôte', host.uptime_sec != null ? fmt.duration(host.uptime_sec) : '—'],
+            ['Incidents actifs', `${actionable} en cours`],
+            ['Services sondés', String(sla.services || 0)]
+          ]),
+          h('div', { style: { 'padding-top': 'var(--ck-space-16)', 'border-top': 'var(--ck-border)' } },
+            h('div', { class: 'ck-spread', style: { 'margin-bottom': 'var(--ck-space-8)' } },
+              h('span', { class: 'ck-text-caption' }, 'Historique de disponibilité — 90 derniers jours (pire état du jour, services critiques et vitrines)'),
+              UI.tag(sla.uptime != null ? `${fmt.percent(sla.uptime, 2)} SLA` : 'SLA en cours de mesure', { mono: true, tone: 'good' })),
+            bars,
+            Views.uptimeLegend(sla.persisted ? 'Historique persisté dans Supabase' : 'Historique en mémoire (migration non appliquée)'))));
+      }
+
+      /* ---------- Disponibilité par service ---------- */
+      function renderServices(d) {
+        const services = d.services.slice().sort((a, b) => (b.critical - a.critical) || a.label.localeCompare(b.label, 'fr'));
+        const failing = services.filter((s) => ['down', 'degraded'].includes(s.current_state));
+        $('health-services-sub').textContent = `${services.length} service(s) sondé(s) automatiquement · ${services.filter((s) => s.critical).length} critique(s)`;
+        UI.replace($('health-services-actions'), UI.badge(`${failing.length} en anomalie`, failing.length ? 'danger' : 'good'));
+        if (!services.length) {
+          UI.replace($('health-services'), h('div', { class: 'ck-card__body' }, UI.empty({ title: 'Aucune sonde enregistrée pour l\'instant', desc: 'Les sondes démarrent avec l\'API : l\'historique se remplit ensuite à chaque cycle (90 jours conservés).', icon: 'activity' })));
+          return;
+        }
+        const rows = services.map((s) => {
+          const bars = h('div', { style: { 'min-width': '180px' } });
+          Cockpit.charts.uptime(bars, s.series.slice(-45), { axis: false, height: 18, ariaLabel: `${s.label} : 45 derniers jours` });
+          return h('tr', null,
+            UI.tdPrimary(s.label, s.target || s.key),
+            UI.td(h('div', { class: 'ck-cluster', style: { gap: 'var(--ck-space-6)' } }, UI.statusBadge(s.current_state || 'none', { size: 'sm' }),
+              UI.tag(s.critical ? 'Critique' : 'Surveillé', { mono: true, tone: s.critical ? 'accent' : null }))),
+            UI.tdNum(h('span', { class: 'ck-mono' }, s.uptime != null ? fmt.percent(s.uptime, 2) : '—')),
+            UI.tdNum(h('span', { class: 'ck-mono' }, s.avg_latency_ms != null ? `${fmt.decimal(s.avg_latency_ms)} ms` : '—')),
+            UI.td(bars),
+            UI.td([h('span', { class: 'ck-mono ck-text-12' }, s.current_code || '—'), s.current_detail ? h('span', { class: 'ck-table__sub' }, s.current_detail) : null]));
+        });
+        UI.replace($('health-services'), UI.table({ compact: true, caption: 'Disponibilité par service',
+          columns: ['Service sondé', 'État courant', { label: 'Dispo. 90 j', kind: 'num' }, { label: 'Latence moy.', kind: 'num' }, 'Historique (45 j)', 'Dernier contrôle'], rows }));
+      }
+
+      /* ---------- Indicateurs & jauges ---------- */
+      function renderKpis(d) {
+        const k = d.kpis;
+        const probeLatencies = d.probes.filter((p) => p.latency_ms != null).map((p) => p.latency_ms).reverse();
+        const spark = (values, max) => { const node = h('div', { class: 'ck-kpi__spark', style: { height: '28px', 'margin-top': 'var(--ck-space-6)' } }); window.requestAnimationFrame(() => Cockpit.charts.spark(node, values, { max })); return node; };
+        UI.replace($('health-kpis'),
+          UI.kpi({ label: 'Latence des sondes', value: k.avg_latency_ms != null ? fmt.decimal(k.avg_latency_ms) : '—', unit: 'ms', icon: 'zap', tone: (k.avg_latency_ms || 0) < 250 ? 'good' : 'warn', meta: 'Moyenne des derniers contrôles', extra: spark(probeLatencies) }),
+          UI.kpi({ label: 'Débit disque', value: fmt.decimal(d.host.disk_io_rate_mb, 1), unit: 'Mo/s', icon: 'hard-drive', tone: 'accent', meta: `${fmt.percent(d.host.disk_percent, 0)} du disque occupé`, extra: (gaugeNodes.ioSpark = spark(live.disk_io_rate_mb)) }),
+          UI.kpi({ label: 'Sondes en service', value: `${k.probes_ok} / ${k.probes_total}`, icon: 'activity', tone: k.error_rate ? 'warn' : 'good', meta: 'Contrôles HTTP & TCP récents' }),
+          UI.kpi({ label: 'Taux d\'anomalies', value: fmt.decimal(k.error_rate, 1), unit: '%', icon: k.error_rate ? 'alert-circle' : 'check-circle', tone: k.error_rate ? 'warn' : 'good', meta: k.error_rate ? 'Sondes dégradées ou en échec' : 'Zéro anomalie' }));
+      }
+
+      function gaugeCard(key, title, subtitle, warn, danger) {
+        const gauge = h('div');
+        const stats = h('div', { style: { flex: '1', 'min-width': '0' } });
+        const sparkPlot = h('div', { class: 'ck-livespark__plot' });
+        const sparkValue = h('span', { class: 'ck-mono ck-text-11' }, '—');
+        const tag = h('span');
+        const card = UI.card({ title, subtitle, actions: [tag], body: h('div', { class: 'ck-stack', style: { '--ck-stack-gap': 'var(--ck-space-16)' } },
+          h('div', { class: 'ck-gauge-card' }, gauge, stats),
+          h('div', { class: 'ck-livespark' }, h('div', { class: 'ck-livespark__head' }, h('span', { class: 'ck-text-caption' }, key === 'net' ? 'Débit réseau · 60 s' : `${title.split(' ')[0]} · 60 s`), sparkValue), sparkPlot)) });
+        gaugeNodes[key] = { gauge, stats, sparkPlot, sparkValue, tag, warn, danger };
+        return card;
+      }
+
+      function renderGaugeShell() {
+        UI.replace($('health-gauges'),
+          gaugeCard('cpu', 'CPU de l\'hôte', 'Processeur · mesure continue', 75, 90),
+          gaugeCard('ram', 'Mémoire vive', 'Occupation de la RAM de l\'hôte', 80, 90),
+          gaugeCard('disk', 'Stockage', 'Espace système et entrées/sorties', 85, 92),
+          gaugeCard('net', 'Réseau & sockets', 'Connexions et débit réseau', 80, 90));
+      }
+
+      function updateGauges(host) {
+        const pct = (v) => (v == null ? null : Number(v));
+        const fill = (key, value, text, stats, series, seriesText, seriesMax) => {
+          const g = gaugeNodes[key];
+          if (!g) return;
+          Cockpit.charts.gauge(g.gauge, { value: pct(value), label: key, size: 92, warn: g.warn, danger: g.danger, text });
+          UI.replace(g.stats, UI.stats(stats));
+          const tone = value == null ? 'neutral' : value >= g.danger ? 'danger' : value >= g.warn ? 'warn' : 'good';
+          UI.replace(g.tag, UI.tag(value == null ? 'non mesuré' : text, { mono: true, tone }));
+          Cockpit.charts.spark(g.sparkPlot, series, { max: seriesMax });
+          g.sparkValue.textContent = seriesText;
+        };
+        const sockets = host.sockets_count;
+        fill('cpu', host.cpu_percent, host.cpu_percent != null ? `${Math.round(host.cpu_percent)} %` : '—', [
+          ['Charge', host.cpu_percent != null ? fmt.percent(host.cpu_percent, 1) : '—'],
+          ['Processus', host.process_count != null ? fmt.number(host.process_count) : '—'],
+          ['Charge moy. 1 min', host.load_avg != null ? fmt.decimal(host.load_avg, 2) : '—'],
+          ['Architecture', `${host.cpu_logical || '—'} vCPU${host.cpu_physical ? ` (${host.cpu_physical} cœurs)` : ''}`]
+        ], live.cpu_percent, host.cpu_percent != null ? fmt.percent(host.cpu_percent, 1) : '—', 100);
+        fill('ram', host.ram_percent, host.ram_percent != null ? `${Math.round(host.ram_percent)} %` : '—', [
+          ['Utilisée', host.ram_used_gb != null ? `${fmt.decimal(host.ram_used_gb)} Go` : '—'],
+          ['Totale', host.ram_total_gb != null ? `${fmt.decimal(host.ram_total_gb)} Go` : '—'],
+          ['Cache / buffers', host.ram_cache_gb != null ? `${fmt.decimal(host.ram_cache_gb)} Go` : '—'],
+          ['Disponible', host.ram_available_gb != null ? `${fmt.decimal(host.ram_available_gb)} Go` : '—']
+        ], live.ram_percent, host.ram_percent != null ? fmt.percent(host.ram_percent, 1) : '—', 100);
+        fill('disk', host.disk_percent, host.disk_percent != null ? `${Math.round(host.disk_percent)} %` : '—', [
+          ['Occupé', host.disk_used_gb != null ? `${fmt.decimal(host.disk_used_gb)} Go` : '—'],
+          ['Total', host.disk_total_gb != null ? `${fmt.decimal(host.disk_total_gb)} Go` : '—'],
+          ['Débit E/S', host.disk_io_rate_mb != null ? `${fmt.decimal(host.disk_io_rate_mb, 2)} Mo/s` : '—'],
+          ['Partition', `${host.disk_mount || '—'}${host.disk_fstype ? ` (${host.disk_fstype})` : ''}`]
+        ], live.disk_io_rate_mb, host.disk_io_rate_mb != null ? `${fmt.decimal(host.disk_io_rate_mb, 2)} Mo/s` : '—');
+        fill('net', sockets != null ? Math.min(100, sockets / 4) : null, sockets != null ? String(sockets) : '—', [
+          ['Sockets ouverts', sockets != null ? fmt.number(sockets) : '—'],
+          ['En écoute', host.conns_listening != null ? fmt.number(host.conns_listening) : '—'],
+          ['Établies', host.conns_established != null ? fmt.number(host.conns_established) : '—'],
+          ['Interfaces', host.net_interfaces_count != null ? fmt.number(host.net_interfaces_count) : '—']
+        ], live.net_io_rate_mb, host.net_io_rate_mb != null ? `${fmt.decimal(host.net_io_rate_mb, 2)} Mo/s` : '—');
+        if (gaugeNodes.ioSpark) Cockpit.charts.spark(gaugeNodes.ioSpark, live.disk_io_rate_mb);
+      }
+
+      function pushLive(host) {
+        Object.keys(live).forEach((key) => {
+          live[key].push(host[key] == null ? null : Number(host[key]));
+          if (live[key].length > LIVE_POINTS) live[key].shift();
+        });
+      }
+
+      /* ---------- Historique, mémoire, conteneurs ---------- */
+      async function loadTimeline() {
+        const t = await App.api('/admin/api/health/timeline', { query: { period } });
+        const labels = { '1h': '1 heure', '24h': '24 heures', '7d': '7 jours', '30d': '30 jours' };
+        $('timeline-title').textContent = `Charge de l'hôte — ${labels[t.period]}`;
+        $('timeline-sub').textContent = t.period === '1h' || t.period === '24h'
+          ? 'Moyennes par minute enregistrées par le moteur de télémétrie depuis son démarrage'
+          : (t.persisted ? 'Moyennes horaires persistées (table host_metrics_hourly)' : 'Aucune donnée persistée : appliquez la migration Supabase');
+        const series = t.series.filter((s) => s.key !== 'disk_io');
+        Cockpit.charts.line($('timeline-chart'), {
+          labels: t.labels, labelFormat: 'datetime', height: 240, yMax: 100, unit: '%', digits: 1,
+          ariaLabel: 'Charge CPU et mémoire de l\'hôte', emptyText: 'Aucune mesure sur cette période pour le moment.',
+          series: series.map((s, i) => ({ name: s.name, values: s.values, unit: s.unit, digits: 1, area: i === 0 }))
+        });
+      }
+
+      function renderMemory(d) {
+        const split = d.memory_split;
+        if (!split) {
+          UI.replace($('health-memory'), UI.empty({ title: 'Mémoire de l\'hôte non mesurée', desc: 'Installez psutil (pyproject) pour obtenir la répartition réelle de la RAM.', icon: 'memory', small: true }));
+          return;
+        }
+        const items = [
+          { label: 'Conteneurs WaaS', value: split.containers_gb, color: 'var(--ck-series-1)' },
+          { label: 'Cache & buffers', value: split.cache_gb, color: 'var(--ck-series-3)' },
+          { label: 'Système & démons', value: split.system_gb, color: 'var(--ck-series-4)' },
+          { label: 'Disponible', value: split.available_gb, color: 'var(--ck-series-muted)' }
+        ];
+        const donut = h('div');
+        const total = items.reduce((sum, i) => sum + (Number(i.value) || 0), 0);
+        Cockpit.charts.donut(donut, { items, size: 148, value: `${fmt.decimal(total)} Go`, label: 'RAM totale', unit: 'Go', digits: 1 });
+        const legend = h('ul', { class: 'ck-legend ck-legend--column', style: { flex: '1', 'min-width': '200px' } }, items.map((i) => {
+          const key = h('span', { class: 'ck-legend__key ck-legend__key--rect', style: { '--s': i.color } });
+          return h('li', { class: 'ck-legend__item' }, key, h('span', { class: 'ck-legend__name' }, i.label),
+            h('span', { class: 'ck-legend__value' }, `${fmt.decimal(i.value, 2)} Go`),
+            h('span', { class: 'ck-legend__share' }, total ? fmt.percent((i.value / total) * 100, 0) : '—'));
+        }));
+        UI.replace($('health-memory'), h('div', { class: 'ck-cluster', style: { gap: 'var(--ck-space-24)', 'align-items': 'center' } }, donut, legend));
+      }
+
+      function renderTop(d) {
+        if (!d.top_containers.length) {
+          UI.replace($('health-top'), UI.empty({ title: 'Aucun conteneur actif', desc: 'Toutes les vitrines sont arrêtées : aucune RAM allouée.', icon: 'server', small: true,
+            actions: [UI.btn('Gérer la flotte', { href: '/admin/vps', size: 'sm' })] }));
+          return;
+        }
+        const list = h('div');
+        Cockpit.charts.barlist(list, d.top_containers.map((c) => ({
+          label: c.site_id, value: c.memory_mb, display: `${fmt.decimal(c.memory_mb, 1)} Mo${c.cpu_percent != null ? ` · ${fmt.decimal(c.cpu_percent, 1)} % CPU` : ''}`
+        })));
+        UI.replace($('health-top'), h('div', { class: 'ck-stack' }, list,
+          h('div', { class: 'ck-spread', style: { 'padding-top': 'var(--ck-space-12)', 'border-top': 'var(--ck-border)' } },
+            h('span', { class: 'ck-text-caption' }, `Flotte : ${fmt.mb(d.fleet_ram_mb)} au total`),
+            UI.tag(`${d.top_containers.length} actif(s)`, { mono: true, tone: 'good' }))));
+      }
+
+      /* ---------- Sous-systèmes & journal ---------- */
+      function renderSubsystems(d) {
+        const ok = d.subsystems.filter((s) => s.state === 'up').length;
+        UI.replace($('health-subsystems-badge'), UI.badge(`${ok} / ${d.subsystems.length} opérationnels`, ok === d.subsystems.length ? 'good' : d.subsystems.some((s) => s.state === 'down') ? 'danger' : 'warn'));
+        UI.replace($('health-subsystems'), UI.table({ caption: 'Sous-systèmes', columns: ['Service', 'Rôle', 'Point d\'accès', 'État', 'Détail'],
+          rows: d.subsystems.map((s) => h('tr', null,
+            UI.tdPrimary(s.name, null), UI.td(h('span', { class: 'ck-text-12' }, s.role)),
+            UI.td(h('span', { class: 'ck-mono ck-text-12' }, s.endpoint || '—')),
+            UI.td(UI.statusBadge(s.state)), UI.td(h('span', { class: 'ck-text-12' }, s.detail || '—')))) }));
+      }
+
+      function renderProbes(d) {
+        UI.replace($('health-probes'), UI.table({ compact: true, caption: 'Journal des sondes', emptyText: 'Aucune sonde exécutée depuis le démarrage.',
+          columns: ['Horodatage', 'Type', 'Service & cible', { label: 'Réponse', kind: 'num' }, 'Code', 'Résultat'],
+          rows: d.probes.slice(0, 30).map((p) => h('tr', null,
+            UI.td(h('span', { class: 'ck-mono ck-text-12' }, fmt.time(p.at) + ':' + String(new Date(p.at).getSeconds()).padStart(2, '0'))),
+            UI.td(UI.tag((p.kind === 'core' ? 'CORE' : p.kind === 'site' ? 'HTTP' : String(p.kind).toUpperCase()), { mono: true, tone: p.kind === 'tcp' ? null : 'accent' })),
+            UI.tdPrimary(p.label, p.target || null),
+            UI.tdNum(h('span', { class: 'ck-mono' }, p.latency_ms != null ? `${fmt.decimal(p.latency_ms)} ms` : '—')),
+            UI.td([h('span', { class: 'ck-mono ck-text-12' }, p.code || '—'), p.detail ? h('span', { class: 'ck-table__sub' }, p.detail) : null]),
+            UI.td(UI.statusBadge(p.state)))) }));
+      }
+
+      /* ---------- Chargement ---------- */
+      function renderAll(d) {
+        overview = d;
+        renderStatus(d);
+        renderIncidents(d.incidents);
+        renderHero(d);
+        renderServices(d);
+        renderKpis(d);
+        renderMemory(d);
+        renderTop(d);
+        renderSubsystems(d);
+        renderProbes(d);
+        updateGauges(d.host);
+      }
+
+      async function load() {
+        renderAll(await App.api('/admin/api/health/overview'));
+      }
+
+      let failures = 0;
+      async function tickHost() {
+        try {
+          const host = await App.api('/admin/api/health/host');
+          failures = 0;
+          pushLive(host);
+          if (overview) updateGauges(host);
+          $('health-live').classList.remove('is-idle');
+          $('health-live-text').textContent = 'Temps réel';
+        } catch (error) {
+          failures += 1;
+          $('health-live').classList.add('is-idle');
+          $('health-live-text').textContent = failures > 2 ? 'Flux interrompu' : 'Reconnexion…';
+        }
+      }
+
+      $('btn-probe-all').addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        UI.busy(button, true, 'Passe complète…');
+        try {
+          renderAll(await App.api('/admin/api/health/probe', { method: 'POST' }));
+          Cockpit.toast({ title: 'Sondes exécutées', message: 'Conteneurs, services et hôte mesurés à l\'instant.', tone: 'good', duration: 2600 });
+        } catch (error) {
+          App.toastError(error);
+        } finally {
+          UI.busy(button, false);
+        }
+      });
+      $('timeline-period').addEventListener('ck:change', (event) => {
+        period = event.detail.value;
+        loadTimeline().catch(App.toastError);
+      });
+
+      App.onRefresh(() => Promise.all([load(), loadTimeline()]));
+      App.boot(async ({ status }) => {
+        status('Lecture de la télémétrie et des sondes…');
+        renderGaugeShell();
+        await Promise.all([load(), loadTimeline(), tickHost()]);
+      }, { shell: 'admin' }).then(() => {
+        App.poll(tickHost, 3000);
+        App.poll(() => load().catch(() => {}), 30000);
+        App.poll(() => loadTimeline().catch(() => {}), 60000);
+      });
+    })();
+    </script>
+  </body>
+</html>

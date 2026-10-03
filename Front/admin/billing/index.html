@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <title>Facturation · Cockpit WaaS</title>
+    <meta name="description" content="Facturation et abonnements : revenus récurrents, factures émises, encaissements et échéances du mois.">
+    <!-- @include head.html -->
+  </head>
+  <body>
+    <!-- @include body-start.html brand="Cockpit WaaS" -->
+
+    <div class="ck-app" id="cockpit-app">
+      <!-- @include admin/sidebar.html -->
+      <div class="ck-scrim"></div>
+
+      <div class="ck-main">
+        <!-- @include admin/topbar.html title="Facturation & abonnements" -->
+
+        <main class="ck-content" id="main" tabindex="-1">
+          <div class="ck-stack">
+            <div id="billing-schema" hidden></div>
+            <div class="ck-kpi-row" id="billing-kpis" aria-label="Indicateurs financiers">
+              <!-- @include skeleton/kpis.html -->
+            </div>
+
+            <div class="ck-toolbar">
+              <div class="ck-segmented ck-segmented--sm" data-ck-segmented role="group" aria-label="Filtrer les factures" id="billing-filter">
+                <button type="button" class="ck-segmented__item" data-value="all" aria-pressed="true">Toutes</button>
+                <button type="button" class="ck-segmented__item" data-value="unpaid" aria-pressed="false">À encaisser</button>
+                <button type="button" class="ck-segmented__item" data-value="paid" aria-pressed="false">Payées</button>
+                <button type="button" class="ck-segmented__item" data-value="draft" aria-pressed="false">Brouillons</button>
+              </div>
+              <div class="ck-cluster">
+                <button type="button" class="ck-btn ck-btn--secondary ck-btn--sm" id="btn-generate">
+                  <svg class="ck-icon" aria-hidden="true"><use href="#i-calendar-clock"/></svg><span>Échéances du mois</span>
+                </button>
+                <button type="button" class="ck-btn ck-btn--primary ck-btn--sm" id="btn-new-invoice">
+                  <svg class="ck-icon" aria-hidden="true"><use href="#i-plus"/></svg><span>Nouvelle facture</span>
+                </button>
+              </div>
+            </div>
+
+            <article class="ck-card">
+              <header class="ck-card__header">
+                <div class="ck-card__heading">
+                  <h2 class="ck-card__title">Factures &amp; abonnements</h2>
+                  <p class="ck-card__subtitle" id="billing-sub"><span class="ck-skeleton ck-skeleton--text ck-skeleton--w45"></span></p>
+                </div>
+              </header>
+              <div id="billing-table">
+                <!-- @include skeleton/table.html cols="6" -->
+              </div>
+            </article>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div id="modal-container"></div>
+
+    <!-- @include scripts.html -->
+    <script>
+    (function () {
+      'use strict';
+      const { h, fmt } = UI;
+      const $ = (id) => document.getElementById(id);
+      const state = { data: null, filter: 'all' };
+      const FILTERS = {
+        all: () => true,
+        unpaid: (inv) => inv.status === 'pending' || inv.status === 'overdue',
+        paid: (inv) => inv.status === 'paid',
+        draft: (inv) => inv.status === 'draft'
+      };
+
+      function renderKpis() {
+        const { totals, business } = state.data;
+        const estimate = business.source === 'estimation';
+        UI.replace($('billing-kpis'),
+          UI.kpi({ label: 'MRR', value: fmt.number(business.mrr), unit: '€', icon: 'euro', tone: 'accent',
+            meta: business.mrr ? (estimate ? 'Estimation (prix par défaut par site)' : `${business.paying_sites} contrat(s) payant(s)`) : 'Aucun abonnement actif' }),
+          UI.kpi({ label: 'ARR', value: fmt.number(business.arr), unit: '€', icon: 'trending-up', tone: business.arr ? 'good' : 'neutral', meta: 'Projection sur 12 mois' }),
+          UI.kpi({ label: 'À encaisser', value: String(totals.pending_count), icon: 'clock', tone: totals.overdue_count ? 'danger' : totals.pending_count ? 'warn' : 'good',
+            meta: totals.pending_count ? `${fmt.money(totals.pending_total, 0)} · dont ${totals.overdue_count} en retard` : 'Aucune facture en attente' }),
+          UI.kpi({ label: 'Encaissé', value: fmt.number(totals.paid_total), unit: '€', icon: 'check-circle', tone: totals.paid_count ? 'good' : 'neutral',
+            meta: totals.paid_count ? `${totals.paid_count} facture(s) soldée(s)` : 'Aucun encaissement' }));
+      }
+
+      function renderTable() {
+        const invoices = state.data.invoices.filter(FILTERS[state.filter]);
+        const t = state.data.totals;
+        $('billing-sub').textContent = `${t.count} facture(s) · ${t.pending_count} à encaisser · ${fmt.money(t.paid_total, 0)} encaissés`;
+        UI.replace($('billing-table'), Views.invoicesTable(invoices, {
+          actions: (inv) => Views.adminInvoiceActions(inv, load),
+          emptyTitle: state.filter === 'all' ? 'Aucune facture émise' : 'Aucune facture dans ce filtre',
+          emptyActions: state.filter === 'all' ? [UI.btn('Échéances du mois', { size: 'sm', icon: 'calendar-clock', onClick: generate })] : null
+        }));
+      }
+
+      function renderSchema() {
+        const box = $('billing-schema');
+        box.hidden = state.data.schema_ready;
+        if (!state.data.schema_ready) {
+          UI.replace(box, UI.alert({ tone: 'warn', bar: true, icon: 'database', title: 'Migration Supabase requise',
+            text: 'La table « invoices » n\'existe pas encore : exécutez End/migrations/001_cockpit.sql dans l\'éditeur SQL de Supabase pour activer la facturation.' }));
+        }
+      }
+
+      async function load() {
+        state.data = await App.api('/admin/api/invoices');
+        renderSchema();
+        renderKpis();
+        renderTable();
+      }
+
+      async function generate() {
+        const ok = await UI.confirm({
+          title: 'Émettre les échéances du mois ?',
+          message: 'Une facture « en attente » est créée pour chaque contrat actif payant qui n\'a pas encore été facturé ce mois-ci.',
+          confirmLabel: 'Émettre', icon: 'calendar-clock'
+        });
+        if (!ok) return;
+        try {
+          const res = await App.api('/admin/api/invoices/generate', { method: 'POST' });
+          Cockpit.toast({ title: res.created ? 'Échéances émises' : 'Rien à émettre', message: res.created ? `${res.created} facture(s) créée(s).` : 'Tous les contrats actifs sont déjà facturés ce mois-ci.', tone: res.created ? 'good' : 'info' });
+          await load();
+        } catch (error) {
+          App.toastError(error);
+        }
+      }
+
+      $('billing-filter').addEventListener('ck:change', (event) => {
+        state.filter = event.detail.value;
+        renderTable();
+      });
+      $('btn-generate').addEventListener('click', generate);
+      $('btn-new-invoice').addEventListener('click', () => {
+        if (!state.data || !state.data.sites.length) {
+          Cockpit.toast({ title: 'Aucune vitrine', message: 'Déployez d\'abord une vitrine pour lui émettre une facture.', tone: 'info' });
+          return;
+        }
+        Views.invoiceDialog({ sites: state.data.sites, onCreated: load });
+      });
+
+      App.onRefresh(load);
+      App.boot(async ({ status }) => {
+        status('Chargement de la facturation…');
+        await load();
+      }, { shell: 'admin' });
+    })();
+    </script>
+  </body>
+</html>

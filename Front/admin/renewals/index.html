@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <title>Renouvellements · Cockpit WaaS</title>
+    <meta name="description" content="Échéancier : abonnements, noms de domaine, certificats SSL et factures impayées de toute la flotte.">
+    <!-- @include head.html -->
+  </head>
+  <body>
+    <!-- @include body-start.html brand="Cockpit WaaS" -->
+
+    <div class="ck-app" id="cockpit-app">
+      <!-- @include admin/sidebar.html -->
+      <div class="ck-scrim"></div>
+
+      <div class="ck-main">
+        <!-- @include admin/topbar.html title="Renouvellements" -->
+
+        <main class="ck-content" id="main" tabindex="-1">
+          <div class="ck-stack">
+            <div id="renewals-schema" hidden></div>
+            <div class="ck-kpi-row" id="renewals-kpis" aria-label="Échéances">
+              <!-- @include skeleton/kpis.html -->
+            </div>
+
+            <div class="ck-toolbar">
+              <div class="ck-segmented ck-segmented--sm" data-ck-segmented role="group" aria-label="Filtrer par type" id="renewals-filter">
+                <button type="button" class="ck-segmented__item" data-value="all" aria-pressed="true">Tout</button>
+                <button type="button" class="ck-segmented__item" data-value="urgent" aria-pressed="false">Urgent</button>
+                <button type="button" class="ck-segmented__item" data-value="subscription" aria-pressed="false">Abonnements</button>
+                <button type="button" class="ck-segmented__item" data-value="domain" aria-pressed="false">Domaines</button>
+                <button type="button" class="ck-segmented__item" data-value="ssl" aria-pressed="false">SSL</button>
+                <button type="button" class="ck-segmented__item" data-value="invoice" aria-pressed="false">Factures</button>
+              </div>
+            </div>
+
+            <article class="ck-card">
+              <header class="ck-card__header">
+                <div class="ck-card__heading">
+                  <h2 class="ck-card__title">Échéancier</h2>
+                  <p class="ck-card__subtitle" id="renewals-sub"><span class="ck-skeleton ck-skeleton--text ck-skeleton--w45"></span></p>
+                </div>
+              </header>
+              <div id="renewals-table">
+                <!-- @include skeleton/table.html cols="6" -->
+              </div>
+              <footer class="ck-card__footer" id="renewals-foot" hidden></footer>
+            </article>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div id="modal-container"></div>
+
+    <!-- @include scripts.html -->
+    <script>
+    (function () {
+      'use strict';
+      const { h, fmt } = UI;
+      const $ = (id) => document.getElementById(id);
+      const KINDS = {
+        subscription: ['Abonnement', 'credit-card'],
+        domain: ['Nom de domaine', 'globe'],
+        ssl: ['Certificat SSL', 'shield-check'],
+        invoice: ['Facture', 'file-text']
+      };
+      const STATES = { overdue: ['danger', 'Échue'], soon: ['warn', 'Bientôt'], upcoming: ['neutral', 'À venir'], auto: ['good', 'Automatique'], unknown: ['neutral', 'Date à renseigner'] };
+      const state = { data: null, filter: 'all' };
+
+      function stateBadge(r) {
+        const [tone, label] = STATES[r.state] || ['neutral', r.state];
+        return UI.badge(r.state === 'overdue' || r.state === 'soon' ? fmt.delay(r.days_left) : label, tone);
+      }
+
+      function renderKpis() {
+        const k = state.data.kpis;
+        const next = k.next;
+        UI.replace($('renewals-kpis'),
+          UI.kpi({ label: 'Prochaine échéance', value: next ? fmt.dateShort(next.due) : '—', icon: 'calendar-clock', tone: 'accent',
+            meta: next ? `${KINDS[next.kind][0]} · ${next.site_name}` : 'Aucune échéance datée' }),
+          UI.kpi({ label: 'Sous 30 jours', value: String(k.urgent), icon: 'alert-triangle', tone: k.urgent ? 'warn' : 'good',
+            meta: k.urgent ? `Dont échues : ${k.overdue}` : 'Rien d\'urgent' }),
+          UI.kpi({ label: 'Abonnements', value: String(k.subscriptions), icon: 'credit-card', tone: k.subscriptions ? 'good' : 'neutral',
+            meta: k.subscriptions ? `${fmt.money(k.monthly, 0)} prélevés chaque mois` : 'Aucune formule payante' }),
+          UI.kpi({ label: 'Automatiques', value: String(k.automatic), icon: 'refresh', tone: k.automatic ? 'good' : 'neutral', meta: 'Sous-domaines & certificats gérés' }));
+      }
+
+      function renderTable() {
+        const all = state.data.renewals;
+        const items = all.filter((r) => state.filter === 'all' ? true
+          : state.filter === 'urgent' ? ['overdue', 'soon'].includes(r.state) : r.kind === state.filter);
+        $('renewals-sub').textContent = `${all.length} échéance(s) · abonnements, domaines, certificats SSL et factures impayées`;
+        const rows = items.map((r) => {
+          const [kindLabel, icon] = KINDS[r.kind] || [r.kind, 'calendar'];
+          return h('tr', r.site_id ? { class: 'is-clickable', dataset: { href: `/admin/sites/detail?id=${encodeURIComponent(r.site_id)}` } } : null,
+            UI.tdPrimary(r.due ? fmt.date(r.due) : '—', fmt.delay(r.days_left), { mono: false }),
+            UI.td(UI.tag(kindLabel, { icon })),
+            UI.tdPrimary(r.label, r.detail || null, { mono: false }),
+            r.site_id ? UI.tdPrimary(r.site_name, null, { href: `/admin/sites/detail?id=${encodeURIComponent(r.site_id)}` }) : UI.td(r.site_name),
+            UI.tdNum(r.amount ? fmt.money(r.amount) : h('span', { class: 'ck-muted' }, '—')),
+            UI.td(stateBadge(r)));
+        });
+        UI.replace($('renewals-table'), all.length
+          ? UI.table({ caption: 'Échéancier des renouvellements', columns: ['Échéance', 'Type', 'Objet', 'Site', { label: 'Montant', kind: 'num' }, 'Statut'], rows, emptyText: 'Aucune échéance dans ce filtre.' })
+          : UI.empty({ title: 'Aucune échéance', desc: 'Les abonnements, domaines et certificats de vos sites apparaîtront ici.', icon: 'calendar-clock' }));
+
+        const unknown = state.data.kpis.unknown;
+        const foot = $('renewals-foot');
+        foot.hidden = !unknown;
+        if (unknown) {
+          UI.replace(foot, h('span', null, `${unknown} échéance(s) sans date — à compléter dans la fiche du site`),
+            h('a', { class: 'ck-link ck-link--arrow', href: '/admin/sites' }, 'Voir les sites', UI.icon('arrow-right')));
+        }
+      }
+
+      async function load() {
+        state.data = await App.api('/admin/api/renewals');
+        const box = $('renewals-schema');
+        box.hidden = state.data.schema_ready;
+        if (!state.data.schema_ready) {
+          UI.replace(box, UI.alert({ tone: 'warn', bar: true, icon: 'database', title: 'Migration Supabase requise',
+            text: 'Les échéances se calculent depuis la table « sites » : exécutez End/migrations/001_cockpit.sql pour renseigner formules, domaines et contrats.' }));
+        }
+        renderKpis();
+        renderTable();
+      }
+
+      $('renewals-filter').addEventListener('ck:change', (event) => {
+        state.filter = event.detail.value;
+        renderTable();
+      });
+
+      App.onRefresh(load);
+      App.boot(async ({ status }) => {
+        status('Calcul de l\'échéancier…');
+        await load();
+      }, { shell: 'admin' });
+    })();
+    </script>
+  </body>
+</html>

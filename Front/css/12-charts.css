@@ -1,0 +1,627 @@
+/* ==========================================================================
+   Cockpit DS — 12 · Data-viz
+   Règles : traits 2px, grille en filets pleins (jamais pointillés), lavis
+   ~10 %, barres ≤ 24px à extrémité arrondie 4px, espace de 2px entre marques
+   adjacentes, anneau de surface 2px sur les points, le texte porte toujours
+   les tokens d'encre — jamais la couleur de la série.
+   La couleur d'une série est passée via --s (ex. style="--s: var(--ck-series-2)").
+   ========================================================================== */
+
+.ck-chart {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-12);
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.ck-chart__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ck-space-8) var(--ck-space-12);
+}
+
+.ck-chart__plot {
+  position: relative;
+  flex: 1;
+  min-height: var(--ck-chart-h, 180px);
+  border-radius: var(--ck-radius-sm);
+  outline: none;
+  transition: opacity var(--ck-dur-2) var(--ck-ease-out);
+}
+
+.ck-chart__plot:focus-visible {
+  outline: var(--ck-focus-width) solid var(--ck-focus-color);
+  outline-offset: 4px;
+}
+
+.ck-chart__plot > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Rechargement : on garde le rendu précédent, atténué — pas de flash */
+.ck-chart.is-loading .ck-chart__plot {
+  opacity: 0.45;
+}
+
+.ck-chart__grid {
+  stroke: var(--ck-chart-grid);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.ck-chart__baseline {
+  stroke: var(--ck-chart-axis);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.ck-chart__tick {
+  fill: var(--ck-chart-label);
+  font-family: var(--ck-font-sans);
+  font-size: var(--ck-text-11);
+  font-variant-numeric: tabular-nums;
+}
+
+.ck-chart__line {
+  fill: none;
+  stroke: var(--s, var(--ck-series-1));
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ck-chart__area {
+  fill: var(--s, var(--ck-series-1));
+  fill-opacity: 0.1;
+  stroke: none;
+}
+
+.ck-chart__dot {
+  fill: var(--s, var(--ck-series-1));
+  stroke: var(--ck-surface);
+  stroke-width: 2;
+}
+
+.ck-chart__cursor {
+  stroke: var(--ck-chart-cursor);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.ck-chart__bar {
+  fill: var(--s, var(--ck-series-1));
+  transition: opacity var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-chart__bar.is-dim {
+  opacity: 0.35;
+}
+
+.ck-chart__hit {
+  fill: transparent;
+  cursor: default;
+}
+
+.ck-chart__label {
+  fill: var(--ck-ink-1);
+  font-family: var(--ck-font-sans);
+  font-size: var(--ck-text-11);
+  font-weight: var(--ck-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.ck-chart__empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--ck-space-16);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-12);
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Vue tableau — le jumeau accessible de chaque graphique */
+.ck-chart__table {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: var(--ck-border-soft);
+  border-radius: var(--ck-radius-sm);
+}
+
+.ck-chart:not(.is-table) .ck-chart__table,
+.ck-chart.is-table .ck-chart__plot {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   Légende — la clé reproduit la marque (trait, bloc, point)
+   -------------------------------------------------------------------------- */
+.ck-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ck-space-6) var(--ck-space-16);
+  color: var(--ck-ink-2);
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+  list-style: none;
+}
+
+.ck-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ck-space-6);
+  min-width: 0;
+}
+
+.ck-legend__key {
+  flex-shrink: 0;
+  width: 12px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--s, var(--ck-series-1));
+}
+
+.ck-legend__key--rect {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.ck-legend__key--dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.ck-legend__value {
+  color: var(--ck-ink-1);
+  font-weight: var(--ck-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.ck-legend__share {
+  color: var(--ck-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.ck-legend--column {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--ck-space-8);
+}
+
+.ck-legend--column .ck-legend__item {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto auto;
+  gap: var(--ck-space-8);
+}
+
+.ck-legend--column .ck-legend__name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* --------------------------------------------------------------------------
+   Infobulle de graphique — la valeur mène, le nom suit
+   -------------------------------------------------------------------------- */
+.ck-chart-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  min-width: 148px;
+  padding: var(--ck-space-8) var(--ck-space-10);
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-sm);
+  background: var(--ck-surface);
+  box-shadow: var(--ck-shadow-md);
+  font-size: var(--ck-text-12);
+  line-height: 18px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-chart-tip.is-visible {
+  opacity: 1;
+}
+
+/* Infobulle flottante unique (js/charts.js) : jamais rognée par un widget */
+.ck-chart-tip--float {
+  position: fixed;
+  z-index: var(--ck-z-tooltip);
+}
+
+.ck-chart-tip__head {
+  margin-bottom: var(--ck-space-4);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-11);
+  font-variant-numeric: tabular-nums;
+}
+
+.ck-chart-tip__row {
+  display: grid;
+  grid-template-columns: 10px auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--ck-space-8);
+}
+
+.ck-chart-tip__key {
+  width: 10px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--s, var(--ck-series-1));
+}
+
+.ck-chart-tip__value {
+  color: var(--ck-ink-1);
+  font-weight: var(--ck-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.ck-chart-tip__name {
+  overflow: hidden;
+  color: var(--ck-ink-3);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* --------------------------------------------------------------------------
+   Sparkline — série en retrait, période courante à l'accent
+   -------------------------------------------------------------------------- */
+.ck-spark {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ck-spark__area {
+  fill: var(--ck-ink-4);
+  fill-opacity: 0.08;
+}
+
+.ck-spark__line {
+  fill: none;
+  stroke: var(--ck-series-muted);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ck-spark__recent {
+  fill: none;
+  stroke: var(--ck-accent);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ck-spark__end {
+  fill: var(--ck-accent);
+  stroke: var(--ck-surface);
+  stroke-width: 1.5;
+}
+
+/* --------------------------------------------------------------------------
+   Classement (barres horizontales HTML)
+   -------------------------------------------------------------------------- */
+.ck-barlist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-10);
+  list-style: none;
+}
+
+.ck-barlist__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--ck-space-4) var(--ck-space-12);
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+}
+
+.ck-barlist__label {
+  overflow: hidden;
+  color: var(--ck-ink-2);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ck-barlist__value {
+  color: var(--ck-ink-1);
+  font-weight: var(--ck-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.ck-barlist__track {
+  grid-column: 1 / -1;
+  height: 6px;
+  border-radius: var(--ck-radius-pill);
+  background: var(--ck-surface-3);
+  overflow: hidden;
+}
+
+.ck-barlist__bar {
+  width: var(--v, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--s, var(--ck-series-1));
+  transition: width var(--ck-dur-4) var(--ck-ease-out);
+}
+
+/* Barre empilée 100 % — 2px d'espace entre segments, extrémités arrondies */
+.ck-stackbar {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+}
+
+.ck-stackbar__seg {
+  flex: var(--v, 1) 1 0;
+  min-width: 2px;
+  background: var(--s, var(--ck-series-1));
+}
+
+.ck-stackbar__seg:first-child {
+  border-radius: var(--ck-radius-xs) 0 0 var(--ck-radius-xs);
+}
+
+.ck-stackbar__seg:last-child {
+  border-radius: 0 var(--ck-radius-xs) var(--ck-radius-xs) 0;
+}
+
+/* --------------------------------------------------------------------------
+   Anneau (répartition ≤ 5 segments) & jauge circulaire
+   -------------------------------------------------------------------------- */
+.ck-donut {
+  position: relative;
+  flex-shrink: 0;
+  width: var(--size, 132px);
+  aspect-ratio: 1;
+}
+
+.ck-donut > svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ck-donut__track {
+  fill: none;
+  stroke: var(--ck-surface-3);
+}
+
+.ck-donut__seg {
+  fill: none;
+  stroke: var(--s, var(--ck-series-1));
+  transition: opacity var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-donut__seg.is-dim {
+  opacity: 0.3;
+}
+
+.ck-donut__center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+.ck-donut__value {
+  color: var(--ck-ink-1);
+  font-size: clamp(16px, calc(var(--size, 132px) * 0.16), 26px);
+  line-height: 1.1;
+  font-weight: var(--ck-weight-semibold);
+  font-stretch: var(--ck-figure-stretch);
+  letter-spacing: -0.02em;
+}
+
+.ck-donut__label {
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-11);
+  line-height: 14px;
+}
+
+.ck-gauge {
+  --g-color: var(--ck-accent);
+  position: relative;
+  flex-shrink: 0;
+  width: var(--size, 64px);
+  aspect-ratio: 1;
+}
+
+.ck-gauge > svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ck-gauge__track {
+  fill: none;
+  stroke: color-mix(in srgb, var(--g-color) 15%, var(--ck-surface));
+}
+
+.ck-gauge__arc {
+  fill: none;
+  stroke: var(--g-color);
+  stroke-linecap: round;
+  transition: stroke-dashoffset var(--ck-dur-4) var(--ck-ease-out);
+}
+
+[data-tone="warn"].ck-gauge { --g-color: var(--ck-warn); }
+[data-tone="danger"].ck-gauge { --g-color: var(--ck-danger); }
+[data-tone="good"].ck-gauge { --g-color: var(--ck-good); }
+
+.ck-gauge__value {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--ck-ink-1);
+  font-size: clamp(11px, calc(var(--size, 64px) * 0.22), 18px);
+  font-weight: var(--ck-weight-semibold);
+  letter-spacing: -0.02em;
+}
+
+.ck-gauges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-around;
+  gap: var(--ck-space-12) var(--ck-space-16);
+}
+
+.ck-gauge-item {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-12);
+  min-width: 0;
+}
+
+.ck-gauge-item__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-2);
+  min-width: 0;
+}
+
+.ck-gauge-item__label {
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-11);
+  line-height: 16px;
+  font-weight: var(--ck-weight-semibold);
+  letter-spacing: var(--ck-tracking-overline);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ck-gauge-item__meta {
+  overflow: hidden;
+  color: var(--ck-ink-2);
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* --------------------------------------------------------------------------
+   Disponibilité (barres journalières) — état = statut, jamais une série
+   -------------------------------------------------------------------------- */
+.ck-uptime {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-8);
+  min-width: 0;
+}
+
+.ck-uptime__bars {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  height: 28px;
+}
+
+.ck-uptime__tick {
+  flex: 1 1 0;
+  min-width: 2px;
+  border-radius: 2px;
+  background: var(--ck-good);
+  transition: opacity var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-uptime__tick[data-state="degraded"] { background: var(--ck-warn); }
+.ck-uptime__tick[data-state="down"] { background: var(--ck-danger); }
+.ck-uptime__tick[data-state="none"] { background: var(--ck-surface-3); }
+
+.ck-uptime__bars:hover .ck-uptime__tick {
+  opacity: 0.55;
+}
+
+.ck-uptime__bars:hover .ck-uptime__tick:hover {
+  opacity: 1;
+}
+
+.ck-uptime__axis {
+  display: flex;
+  justify-content: space-between;
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-11);
+  line-height: 14px;
+}
+
+/* --------------------------------------------------------------------------
+   Carte de chaleur (magnitude séquentielle, une teinte)
+   -------------------------------------------------------------------------- */
+.ck-heatmap {
+  display: grid;
+  grid-template-columns: auto repeat(var(--cols, 12), minmax(0, 1fr));
+  gap: 2px;
+  align-items: center;
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-11);
+  line-height: 1;
+}
+
+.ck-heatmap__label {
+  padding-right: var(--ck-space-6);
+  white-space: nowrap;
+}
+
+.ck-heatmap__col {
+  padding-bottom: var(--ck-space-4);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.ck-heatmap__cell {
+  height: var(--cell-h, 14px);
+  border-radius: 2px;
+  background: var(--c, var(--ck-seq-0));
+  transition: box-shadow var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-heatmap__cell:hover {
+  box-shadow: 0 0 0 1.5px var(--ck-ink-1);
+}
+
+.ck-scale {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-11);
+}
+
+.ck-scale__step {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--c);
+}
+
+.ck-scale > span:first-child {
+  margin-right: var(--ck-space-4);
+}
+
+.ck-scale > span:last-child {
+  margin-left: var(--ck-space-4);
+}

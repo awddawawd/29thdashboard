@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <title>Paramètres · Cockpit WaaS</title>
+    <meta name="description" content="Configuration de la plateforme : environnement réseau, schéma Supabase, sécurité, réglages dynamiques et diagnostics.">
+    <!-- @include head.html -->
+  </head>
+  <body>
+    <!-- @include body-start.html brand="Cockpit WaaS" -->
+
+    <div class="ck-app" id="cockpit-app">
+      <!-- @include admin/sidebar.html -->
+      <div class="ck-scrim"></div>
+
+      <div class="ck-main">
+        <!-- @include admin/topbar.html title="Paramètres" -->
+
+        <main class="ck-content" id="main" tabindex="-1">
+          <div class="ck-stack">
+            <div class="ck-kpi-row" id="settings-kpis" aria-label="Plateforme">
+              <!-- @include skeleton/kpis.html -->
+            </div>
+            <div class="ck-stack" id="settings-security" style="--ck-stack-gap: var(--ck-space-12)" hidden></div>
+
+            <div class="ck-auto-grid" style="--ck-min: 420px">
+              <article class="ck-card">
+                <header class="ck-card__header">
+                  <div class="ck-card__heading">
+                    <h2 class="ck-card__title">Environnement réseau</h2>
+                    <p class="ck-card__subtitle">Déduit de l'URL publique de l'API et du domaine des vitrines</p>
+                  </div>
+                  <div class="ck-card__actions" id="settings-env-badge">
+                    <span class="ck-skeleton ck-skeleton--pill"></span>
+                  </div>
+                </header>
+                <div class="ck-card__body" id="settings-env">
+                  <!-- @include skeleton/panel.html -->
+                </div>
+              </article>
+
+              <article class="ck-card">
+                <header class="ck-card__header">
+                  <div class="ck-card__heading">
+                    <h2 class="ck-card__title">Schéma Supabase</h2>
+                    <p class="ck-card__subtitle" id="settings-schema-sub"><span class="ck-skeleton ck-skeleton--text ck-skeleton--w35"></span></p>
+                  </div>
+                  <div class="ck-card__actions" id="settings-schema-badge">
+                    <span class="ck-skeleton ck-skeleton--pill"></span>
+                  </div>
+                </header>
+                <div id="settings-schema">
+                  <!-- @include skeleton/table.html cols="3" rows="4" -->
+                </div>
+                <footer class="ck-card__footer" id="settings-schema-foot"></footer>
+              </article>
+            </div>
+
+            <div id="settings-groups" class="ck-stack">
+              <!-- @include skeleton/card.html -->
+              <!-- @include skeleton/card.html -->
+              <!-- @include skeleton/card.html -->
+              <!-- @include skeleton/card.html -->
+            </div>
+
+            <article class="ck-card">
+              <header class="ck-card__header">
+                <div class="ck-card__heading">
+                  <h2 class="ck-card__title">Autres réglages</h2>
+                  <p class="ck-card__subtitle">Clés présentes dans fleet_settings hors catalogue</p>
+                </div>
+                <div class="ck-card__actions">
+                  <button type="button" class="ck-btn ck-btn--secondary ck-btn--xs" id="btn-add-setting">
+                    <svg class="ck-icon" aria-hidden="true"><use href="#i-plus"/></svg><span>Ajouter un réglage</span>
+                  </button>
+                </div>
+              </header>
+              <div id="settings-other">
+                <!-- @include skeleton/table.html cols="2" rows="3" -->
+              </div>
+            </article>
+
+            <div class="ck-auto-grid" style="--ck-min: 420px">
+              <article class="ck-card">
+                <header class="ck-card__header">
+                  <div class="ck-card__heading">
+                    <h2 class="ck-card__title">Points d'accès</h2>
+                    <p class="ck-card__subtitle">Pages servies par cette API</p>
+                  </div>
+                </header>
+                <div id="settings-endpoints">
+                  <!-- @include skeleton/table.html cols="4" -->
+                </div>
+              </article>
+              <article class="ck-card">
+                <header class="ck-card__header">
+                  <div class="ck-card__heading">
+                    <h2 class="ck-card__title">Diagnostics</h2>
+                    <p class="ck-card__subtitle">Moteur de télémétrie, Docker, résolveur DNS</p>
+                  </div>
+                </header>
+                <div class="ck-card__body" id="settings-diag">
+                  <!-- @include skeleton/panel.html -->
+                </div>
+              </article>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div id="modal-container"></div>
+
+    <!-- @include scripts.html -->
+    <script>
+    (function () {
+      'use strict';
+      const { h, fmt } = UI;
+      const $ = (id) => document.getElementById(id);
+      const GROUPS = {
+        network: ['Réseau & exposition', 'Adresses utilisées par les conteneurs et les liens des vitrines'],
+        fleet: ['Flotte & déploiement', 'Image des conteneurs et sources de templates autorisées'],
+        business: ['Agence & facturation', 'Informations imprimées sur les factures et les reçus'],
+        telemetry: ['Télémétrie & sondes', 'Politique de sondage (anti-SSRF, concurrence, plafonds)']
+      };
+      let data = null;
+
+      function renderKpis() {
+        const env = data.environment;
+        const tables = Object.values(data.schema);
+        const ready = tables.filter(Boolean).length;
+        const apiHost = (() => { try { return new URL(env.api_public_url).host; } catch (error) { return env.api_public_url || '—'; } })();
+        UI.replace($('settings-kpis'),
+          UI.kpi({ label: 'Environnement', value: env.label, icon: 'globe', tone: env.mode === 'production' ? 'accent' : 'good',
+            meta: env.mode === 'production' ? 'Cookies sécurisés · HTTPS' : 'Développement (localhost)' }),
+          UI.kpi({ label: 'Domaine des vitrines', value: env.client_base_domain || '—', icon: 'shield-check', meta: 'client_base_domain' }),
+          UI.kpi({ label: 'API publique', value: apiHost, icon: 'server', meta: 'Joignable par les conteneurs' }),
+          UI.kpi({ label: 'Schéma Supabase', value: `${ready} / ${tables.length}`, icon: 'database', tone: ready === tables.length ? 'good' : 'warn',
+            meta: ready === tables.length ? 'Migration appliquée' : 'Migration à appliquer' }));
+      }
+
+      function renderSecurity() {
+        const box = $('settings-security');
+        box.hidden = !data.security.length;
+        UI.replace(box, data.security.map((text) => UI.alert({ tone: 'warn', icon: 'shield-check', title: 'Sécurité', text })));
+      }
+
+      function renderEnv() {
+        const env = data.environment;
+        UI.replace($('settings-env-badge'), UI.badge(env.mode === 'production' ? 'Mode production' : 'Mode local', env.mode === 'production' ? 'info' : 'good'));
+        UI.replace($('settings-env'), h('div', { class: 'ck-stack' },
+          h('p', { class: 'ck-text-body' }, env.mode === 'production'
+            ? 'Un domaine réel ou une API en HTTPS est configuré : cookies de session sécurisés et liens des vitrines sur le domaine.'
+            : 'Aucun domaine public : liens des vitrines sur localhost. Renseignez un domaine et une URL d\'API en HTTPS pour passer en production.'),
+          UI.dl([
+            ['URL publique de l\'API', h('span', { class: 'ck-mono' }, env.api_public_url || 'non définie')],
+            ['URL vue du navigateur', h('div', { class: 'ck-cluster' },
+              h('span', { class: 'ck-mono' }, env.browser_api_url || 'non définie'),
+              env.browser_api_url && env.browser_api_url !== env.api_public_url
+                ? UI.badge('Audience & aperçu du Studio', 'info')
+                : null)],
+            ['Domaine des vitrines', h('span', { class: 'ck-mono' }, env.client_base_domain || 'non défini')],
+            ['Dépôts GitHub privés', data.private_repos
+              ? UI.badge('Jeton configuré', 'good')
+              : h('div', { class: 'ck-cluster' },
+                  UI.badge('Désactivés', 'neutral'),
+                  h('span', { class: 'ck-mono' }, 'WAAS_GITHUB_TOKEN'),
+                  h('span', { class: 'ck-text-12 ck-muted' }, '(variable d\'environnement dans End/.env)'))],
+            ['Documentation /docs', data.docs_enabled ? UI.badge('Exposée', 'warn') : UI.badge('Désactivée', 'good')]
+          ])));
+      }
+
+      function renderSchema() {
+        const entries = Object.entries(data.schema);
+        const missing = entries.filter(([, ok]) => !ok).length;
+        $('settings-schema-sub').textContent = `${data.supabase_host || 'Supabase'} · tables du cockpit`;
+        UI.replace($('settings-schema-badge'), UI.badge(missing ? `${missing} table(s) absente(s)` : 'Complet', missing ? 'warn' : 'good'));
+        UI.replace($('settings-schema'), UI.table({ compact: true, caption: 'Tables Supabase', columns: ['Table', 'Usage', 'État'],
+          rows: entries.map(([table, ok]) => h('tr', null,
+            UI.td(table, 'ck-mono'),
+            UI.td(h('span', { class: 'ck-text-12' }, {
+              sites: 'Fiches commerciales des vitrines', invoices: 'Factures', tickets: 'Conversations support',
+              ticket_messages: 'Messages support', uptime_daily: 'Disponibilité 90 jours', host_metrics_hourly: 'Charge horaire (7/30 j)'
+            }[table] || '')),
+            UI.td(ok ? UI.badge('Présente', 'good') : UI.badge('Absente', 'warn')))) }));
+        UI.replace($('settings-schema-foot'),
+          h('span', null, missing ? 'Exécutez la migration dans Supabase → SQL Editor (idempotente).' : 'Toutes les tables du cockpit sont en place.'),
+          h('button', { type: 'button', class: 'ck-btn ck-btn--ghost ck-btn--xs', 'data-ck-copy': data.migration_file, 'data-ck-copy-label': 'Chemin de la migration copié.' },
+            UI.icon('copy'), h('span', { class: 'ck-mono' }, data.migration_file)));
+      }
+
+      function settingField(setting, current) {
+        const id = `set-${setting.key}`;
+        const value = current != null ? current : '';
+        const control = setting.options
+          ? UI.select(setting.key, setting.options.map((o) => [o, o]), { id, value: value || setting.default || setting.options[0] })
+          : UI.input(setting.key, { id, mono: true, value, placeholder: setting.placeholder || setting.default || '' });
+        const help = [setting.help, setting.default && !setting.options ? `Défaut : ${setting.default}` : null].filter(Boolean).join(' ');
+        return UI.field(setting.label, control, { help, optional: current == null });
+      }
+
+      function renderGroups() {
+        const known = data.known;
+        UI.replace($('settings-groups'), Object.entries(GROUPS).map(([group, [title, subtitle]]) => {
+          const items = known.filter((s) => s.group === group);
+          const submit = UI.btn('Enregistrer', { variant: 'primary', size: 'sm', icon: 'save', type: 'submit' });
+          const form = h('form', { class: 'ck-form' },
+            h('div', { class: 'ck-form-grid' }, items.map((s) => settingField(s, data.settings[s.key]))),
+            h('div', { class: 'ck-form-actions' }, submit));
+          form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const values = UI.formValues(form);
+            const changed = Object.entries(values).filter(([key, value]) => String(value ?? '') !== String(data.settings[key] ?? ''));
+            if (!changed.length) {
+              Cockpit.toast({ title: 'Aucun changement', message: title, tone: 'info', duration: 1800 });
+              return;
+            }
+            UI.busy(submit, true, 'Enregistrement…');
+            try {
+              for (const [key, value] of changed) {
+                await App.api('/admin/api/fleet/settings', { method: 'POST', body: { key, value: String(value ?? '') } });
+              }
+              App.toastOk('Réglages enregistrés', `${changed.length} valeur(s) · ${title}`);
+              await load();
+            } catch (error) {
+              App.toastError(error);
+            } finally {
+              UI.busy(submit, false);
+            }
+          });
+          return UI.card({ title, subtitle, body: form });
+        }));
+      }
+
+      function renderOther() {
+        const knownKeys = new Set(data.known.map((s) => s.key));
+        const others = Object.entries(data.settings).filter(([key]) => !knownKeys.has(key)).sort(([a], [b]) => a.localeCompare(b));
+        UI.replace($('settings-other'), others.length
+          ? UI.table({ compact: true, caption: 'Autres réglages', columns: ['Clé', 'Valeur'],
+            rows: others.map(([key, value]) => h('tr', null, UI.td(key, 'ck-mono'), UI.td(h('span', { class: 'ck-mono ck-text-12' }, value)))) })
+          : h('div', { class: 'ck-card__body' }, UI.empty({ title: 'Aucun autre réglage', desc: 'Toutes les clés présentes sont gérées par les formulaires ci-dessus.', icon: 'sliders', small: true })));
+      }
+
+      function renderEndpoints() {
+        const origin = window.location.origin;
+        const endpoints = [
+          ['Cockpit agence', '/admin/dashboard', 'Administrateurs'],
+          ['Espace client', '/portal', 'Comptes clients (et agence)'],
+          ['Studio d\'édition', '/studio', 'Édition visuelle des vitrines'],
+          ['Page de statut', '/status', 'Publique'],
+          ['Documentation API', '/docs', data.docs_enabled ? 'Exposée (désactivable)' : 'Désactivée']
+        ];
+        UI.replace($('settings-endpoints'), UI.table({ compact: true, caption: 'Points d\'accès', columns: ['Page', 'Adresse', 'Accès', { label: '', kind: 'actions' }],
+          rows: endpoints.map(([name, path, access]) => h('tr', null,
+            UI.tdPrimary(name, null), UI.td(h('span', { class: 'ck-mono ck-text-12' }, origin + path)), UI.td(h('span', { class: 'ck-text-12' }, access)),
+            UI.tdActions(path === '/docs' && !data.docs_enabled ? null : UI.btn(`Ouvrir ${name}`, { href: path, icon: 'external', variant: 'ghost', size: 'xs', iconOnly: true, external: true })))) }));
+      }
+
+      function renderDiag() {
+        const diag = data.telemetry;
+        const dns = diag.dns || {};
+        UI.replace($('settings-diag'), UI.dl([
+          ['Moteur de télémétrie', diag.running ? UI.badge('Actif', 'good') : UI.badge('Arrêté', 'danger')],
+          ['Docker', data.docker.available ? `Joignable · ${data.docker.version || 'version inconnue'}` : UI.badge('Injoignable', 'danger')],
+          ['Mesures de l\'hôte', data.host.source === 'psutil' ? 'psutil' : `${data.host.source || '—'} (installez psutil pour tout mesurer)`],
+          ['Hôte', h('span', { class: 'ck-mono' }, `${data.host.hostname || '—'} · ${data.host.platform || ''}`)],
+          ['Résolveur DNS', `${dns.threads || 0} thread(s) · ${dns.completed || 0} résolutions · ${dns.rejected || 0} refus`],
+          ['Politique de sondage', `${(diag.policy || {}).source || '—'} · méthodes ${((diag.policy || {}).allowed_methods || []).join(', ')}`],
+          ['Appels bloquants abandonnés', String(diag.abandoned_blocking_threads || 0)]
+        ]));
+      }
+
+      function openAddSetting() {
+        const key = UI.input('key', { id: 'new-key', mono: true, required: true, pattern: '^[a-z0-9_]{2,64}$', placeholder: 'ma_cle' });
+        const value = UI.input('value', { id: 'new-value', mono: true, maxlength: 2000 });
+        const submit = UI.btn('Ajouter', { variant: 'primary', icon: 'plus', type: 'submit', attrs: { form: 'form-setting' } });
+        const form = h('form', { class: 'ck-form', id: 'form-setting' },
+          UI.field('Clé', key, { required: true, help: 'Minuscules, chiffres et _.' }), UI.field('Valeur', value));
+        const dialog = UI.dialog({ title: 'Nouveau réglage', size: 'sm', body: form, footer: [UI.btn('Annuler', { variant: 'ghost', attrs: { 'data-ck-close': '' } }), submit] });
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          if (!form.reportValidity()) return;
+          UI.busy(submit, true);
+          try {
+            await App.api('/admin/api/fleet/settings', { method: 'POST', body: UI.formValues(form) });
+            Cockpit.closeDialog(dialog);
+            await load();
+          } catch (error) {
+            App.toastError(error);
+          } finally {
+            UI.busy(submit, false);
+          }
+        });
+      }
+
+      async function load() {
+        data = await App.api('/admin/api/platform');
+        renderKpis();
+        renderSecurity();
+        renderEnv();
+        renderSchema();
+        renderGroups();
+        renderOther();
+        renderEndpoints();
+        renderDiag();
+      }
+
+      $('btn-add-setting').addEventListener('click', openAddSetting);
+      App.onRefresh(load);
+      App.boot(async ({ status }) => {
+        status('Lecture de la configuration et du schéma Supabase…');
+        await load();
+      }, { shell: 'admin' });
+    })();
+    </script>
+  </body>
+</html>

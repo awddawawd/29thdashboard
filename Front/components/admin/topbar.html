@@ -1,0 +1,21 @@
+<!-- Barre supérieure du cockpit : titre de la page, environnement, audience en direct -->
+<header class="ck-topbar">
+  <div class="ck-topbar__start">
+    <button type="button" class="ck-btn ck-btn--ghost ck-btn--sm ck-btn--icon ck-topbar__menu" data-ck-nav-toggle aria-label="Ouvrir la navigation" aria-controls="app-sidebar">
+      <svg class="ck-icon" aria-hidden="true"><use href="#i-menu"/></svg>
+    </button>
+    <h1 class="ck-topbar__title">{{title}}</h1>
+  </div>
+  <div class="ck-topbar__end">
+    <span class="ck-hide-sm" data-shell="env" hidden></span>
+    <span class="ck-live ck-hide-sm is-idle" data-shell="live" title="Visiteurs vus sur l'ensemble des vitrines depuis 5 minutes">
+      <span class="ck-live__dot"></span><span data-shell="live-text">— en direct</span>
+    </span>
+    <a href="/admin/sites?new=1" class="ck-btn ck-btn--primary ck-btn--sm" aria-label="Nouveau site" title="Déployer une nouvelle vitrine">
+      <svg class="ck-icon" aria-hidden="true"><use href="#i-plus"/></svg><span class="ck-hide-sm">Nouveau site</span>
+    </a>
+    <button type="button" class="ck-btn ck-btn--ghost ck-btn--sm ck-btn--icon" data-app-refresh aria-label="Actualiser les données" title="Actualiser les données">
+      <svg class="ck-icon" aria-hidden="true"><use href="#i-refresh"/></svg>
+    </button>
+  </div>
+</header>

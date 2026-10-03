@@ -1,0 +1,14 @@
+﻿{
+  "files.exclude": {
+    "**/.git": true,
+    "**/.venv": true,
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    ".vscode": true,
+    ".gitignore": true,
+    ".python-version": true,
+    "pyproject.toml": true,
+    "README.md": true,
+    "uv.lock": true
+  }
+}

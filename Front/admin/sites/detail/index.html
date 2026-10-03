@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <title>Fiche vitrine · Cockpit WaaS</title>
+    <meta name="description" content="Fiche d'une vitrine : offre, fréquentation, domaine, sondes externes, factures et échanges.">
+    <!-- @include head.html -->
+  </head>
+  <body>
+    <!-- @include body-start.html brand="Cockpit WaaS" -->
+
+    <div class="ck-app" id="cockpit-app">
+      <!-- @include admin/sidebar.html -->
+      <div class="ck-scrim"></div>
+
+      <div class="ck-main">
+        <!-- @include admin/topbar.html title="Sites & vitrines" -->
+
+        <main class="ck-content" id="main" tabindex="-1">
+          <div class="ck-stack" id="site-root">
+            <div class="ck-page-head" id="site-head">
+              <!-- @include skeleton/page-head.html -->
+            </div>
+            <div class="ck-kpi-row" id="site-kpis">
+              <!-- @include skeleton/kpis.html -->
+            </div>
+
+            <div class="ck-auto-grid" style="--ck-min: 380px">
+              <article class="ck-card">
+                <header class="ck-card__header">
+                  <div class="ck-card__heading">
+                    <h2 class="ck-card__title">Fréquentation</h2>
+                    <p class="ck-card__subtitle">14 derniers jours</p>
+                  </div>
+                </header>
+                <div class="ck-card__body" id="site-traffic">
+                  <!-- @include skeleton/chart.html -->
+                </div>
+              </article>
+              <article class="ck-card">
+                <header class="ck-card__header">
+                  <div class="ck-card__heading">
+                    <h2 class="ck-card__title">Fiche client &amp; domaine</h2>
+                    <p class="ck-card__subtitle" id="site-record-sub"><span class="ck-skeleton ck-skeleton--text ck-skeleton--w45"></span></p>
+                  </div>
+                  <div class="ck-card__actions">
+                    <button type="button" class="ck-btn ck-btn--secondary ck-btn--xs" id="btn-edit-site">
+                      <svg class="ck-icon" aria-hidden="true"><use href="#i-pencil"/></svg><span>Modifier</span>
+                    </button>
+                  </div>
+                </header>
+                <div class="ck-card__body" id="site-record">
+                  <!-- @include skeleton/panel.html -->
+                </div>
+              </article>
+            </div>
+
+            <article class="ck-card">
+              <header class="ck-card__header">
+                <div class="ck-card__heading">
+                  <h2 class="ck-card__title">Sondes externes</h2>
+                  <p class="ck-card__subtitle">Services tiers dont dépend la vitrine (API, SMTP, réservations) · contrôlés à chaque cycle</p>
+                </div>
+                <div class="ck-card__actions">
+                  <button type="button" class="ck-btn ck-btn--secondary ck-btn--xs" id="btn-add-monitor">
+                    <svg class="ck-icon" aria-hidden="true"><use href="#i-plus"/></svg><span>Ajouter une sonde</span>
+                  </button>
+                </div>
+              </header>
+              <div id="site-monitors">
+                <!-- @include skeleton/table.html cols="5" -->
+              </div>
+            </article>
+
+            <article class="ck-card">
+              <header class="ck-card__header">
+                <div class="ck-card__heading">
+                  <h2 class="ck-card__title">Factures</h2>
+                  <p class="ck-card__subtitle" id="site-invoices-sub"><span class="ck-skeleton ck-skeleton--text ck-skeleton--w45"></span></p>
+                </div>
+                <div class="ck-card__actions">
+                  <button type="button" class="ck-btn ck-btn--secondary ck-btn--xs" id="btn-new-invoice">
+                    <svg class="ck-icon" aria-hidden="true"><use href="#i-plus"/></svg><span>Nouvelle facture</span>
+                  </button>
+                </div>
+              </header>
+              <div id="site-invoices">
+                <!-- @include skeleton/table.html cols="6" -->
+              </div>
+            </article>
+
+            <article class="ck-card">
+              <header class="ck-card__header">
+                <div class="ck-card__heading">
+                  <h2 class="ck-card__title">Échanges</h2>
+                  <p class="ck-card__subtitle" id="site-tickets-sub"><span class="ck-skeleton ck-skeleton--text ck-skeleton--w35"></span></p>
+                </div>
+              </header>
+              <div id="site-tickets">
+                <!-- @include skeleton/table.html cols="5" -->
+              </div>
+            </article>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div id="modal-container"></div>
+
+    <!-- @include scripts.html -->
+    <script>
+    (function () {
+      'use strict';
+      const { h, fmt } = UI;
+      const $ = (id) => document.getElementById(id);
+      const siteId = App.param('id') || '';
+      const api = (suffix) => `/admin/api/sites/${encodeURIComponent(siteId)}${suffix || ''}`;
+      let data = null;
+
+      /* ---------- En-tête & indicateurs ---------- */
+      function renderHead(site) {
+        document.title = `${site.name} · Cockpit WaaS`;
+        const url = site.url;
+        UI.replace($('site-head'),
+          h('div', { class: 'ck-page-head__main' },
+            h('a', { class: 'ck-back', href: '/admin/sites' }, UI.icon('arrow-left'), 'Sites'),
+            h('h2', { class: 'ck-page-head__title' }, site.name, UI.statusBadge(site.status), UI.live(site.live_visitors)),
+            h('div', { class: 'ck-page-head__meta' },
+              url ? h('a', { href: url, target: '_blank', rel: 'noopener noreferrer', class: 'ck-mono' }, Views.siteDomain(site)) : h('span', { class: 'ck-mono' }, site.site_id),
+              h('span', { 'aria-hidden': 'true' }, '·'), UI.tag(site.plan_name),
+              h('span', null, site.client_name || 'Client non assigné'))),
+          h('div', { class: 'ck-page-head__actions' },
+            UI.btn('Studio', { href: `/studio?site=${encodeURIComponent(site.site_id)}`, icon: 'pencil', variant: 'primary', size: 'sm' }),
+            url ? UI.btn('Visiter', { href: url, icon: 'external', size: 'sm', external: true }) : null,
+            UI.btn('VPS', { href: `/admin/vps/detail?id=${encodeURIComponent(site.site_id)}`, icon: 'server', variant: 'ghost', size: 'sm' })));
+      }
+
+      function renderKpis(d) {
+        const site = d.site;
+        const totals = d.invoice_totals;
+        const openTickets = d.tickets.filter((t) => t.status !== 'closed').length;
+        UI.replace($('site-kpis'),
+          UI.kpi({ label: 'Offre', value: site.price_monthly ? fmt.number(site.price_monthly) : 'Incluse', unit: site.price_monthly ? '€/mois' : null, icon: 'euro', tone: 'accent', meta: site.plan_name }),
+          UI.kpi({ label: 'Visites · 14 j', value: fmt.number(d.traffic.visitors), icon: 'users', meta: `${fmt.number(d.traffic.pageviews)} pages vues` }),
+          UI.kpi({ label: 'Factures payées', value: `${totals.paid_count} / ${totals.count}`, icon: 'check-circle', tone: totals.paid_count ? 'good' : 'neutral', meta: `${fmt.money(totals.paid_total)} encaissés` }),
+          UI.kpi({ label: 'Tickets en cours', value: String(openTickets), icon: 'message', tone: openTickets ? 'warn' : 'neutral', meta: `${d.tickets.length} au total` }));
+      }
+
+      /* ---------- Fiche client & domaine ---------- */
+      function renderRecord(d) {
+        const site = d.site;
+        const rec = d.record;
+        const production = d.environment.mode === 'production';
+        $('site-record-sub').textContent = rec ? `Client depuis le ${fmt.date(site.contract_since)}` : 'Aucune fiche commerciale : complétez-la';
+        UI.replace($('site-record'), UI.dl([
+          ['Client', site.client_name || '—'],
+          ['Offre', site.price_monthly ? `${site.plan_name} · ${fmt.number(site.price_monthly)} €/mois` : `${site.plan_name} · incluse`],
+          ['Contrat', h('span', null, UI.statusBadge(site.contract_status === 'active' ? 'active' : site.contract_status), ' ', `depuis le ${fmt.date(site.contract_since)}`)],
+          ['URL active', site.url ? h('a', { href: site.url, target: '_blank', rel: 'noopener noreferrer', class: 'ck-mono' }, site.url) : '—'],
+          ['Domaine', site.domain ? h('span', { class: 'ck-mono' }, site.domain) : '—'],
+          ['Échéance domaine', site.domain_expires_at ? fmt.date(site.domain_expires_at) : '—'],
+          ['SSL', production ? (site.ssl_expires_at ? `Expire le ${fmt.date(site.ssl_expires_at)}` : UI.badge('Géré par le proxy (HTTPS)', 'good')) : UI.badge('Local (HTTP)', 'neutral')],
+          ['Dépôt', site.repo_url ? h('span', { class: 'ck-mono' }, site.repo_url.replace(/^https:\/\//, '')) : '—'],
+          ['Contenu éditable', `${fmt.number(d.content_count)} élément(s)`],
+          ['Notes', site.notes || '—']
+        ]));
+      }
+
+      /* ---------- Sondes externes ---------- */
+      function renderMonitors(d) {
+        const rows = d.monitors.map((m) => h('tr', null,
+          UI.tdPrimary(m.name, m.target),
+          UI.td(UI.tag((m.monitor_type || 'http').toUpperCase(), { mono: true, tone: m.monitor_type === 'tcp' ? null : 'accent' })),
+          UI.td(m.monitor_type === 'tcp' ? 'Connexion TCP' : `${m.method || 'GET'} → ${m.expected_status || 200}`, 'ck-mono'),
+          UI.td(m.is_active ? UI.badge('Active', 'good') : UI.badge('Inactive', 'neutral')),
+          UI.tdActions(UI.btn(`Supprimer la sonde ${m.name}`, {
+            icon: 'trash', variant: 'ghost', size: 'xs', iconOnly: true,
+            onClick: async () => {
+              const ok = await UI.confirm({ title: 'Supprimer la sonde ?', message: `« ${m.name} » ne sera plus contrôlée.`, confirmLabel: 'Supprimer', tone: 'danger', icon: 'trash' });
+              if (!ok) return;
+              try {
+                await App.api(api(`/monitors/${encodeURIComponent(m.id)}`), { method: 'DELETE' });
+                await load();
+              } catch (error) { App.toastError(error); }
+            }
+          }))));
+        UI.replace($('site-monitors'), d.monitors.length
+          ? UI.table({ caption: 'Sondes externes', columns: ['Sonde & cible', 'Type', 'Attendu', 'État', { label: '', kind: 'actions' }], rows })
+          : UI.empty({ title: 'Aucune sonde externe', desc: 'Surveillez les services tiers utilisés par la vitrine : leur disponibilité apparaîtra dans la page Santé.', icon: 'activity', small: true }));
+      }
+
+      function openMonitorDialog() {
+        const name = UI.input('name', { id: 'mon-name', required: true, maxlength: 80, placeholder: 'ex. API de réservation' });
+        const type = UI.select('monitor_type', [['http', 'HTTP(S) — URL'], ['tcp', 'TCP — hôte:port']], { id: 'mon-type' });
+        const target = UI.input('target', { id: 'mon-target', required: true, mono: true, maxlength: 500, placeholder: 'https://api.exemple.com/health' });
+        const method = UI.select('method', [['GET', 'GET'], ['HEAD', 'HEAD']], { id: 'mon-method' });
+        const expected = UI.input('expected_status', { id: 'mon-status', type: 'number', min: 100, max: 599, value: 200, mono: true });
+        const timeout = UI.input('timeout_seconds', { id: 'mon-timeout', type: 'number', min: 0.5, max: 30, step: '0.5', value: 5, mono: true });
+        const errorBox = UI.alert({ tone: 'danger', inline: true, text: '', class: 'ck-form-error' });
+        type.addEventListener('change', () => {
+          const http = type.value === 'http';
+          target.placeholder = http ? 'https://api.exemple.com/health' : 'smtp.exemple.com:587';
+          method.disabled = !http;
+          expected.disabled = !http;
+        });
+        const submit = UI.btn('Ajouter la sonde', { variant: 'primary', icon: 'plus', type: 'submit', attrs: { form: 'form-monitor' } });
+        const form = h('form', { class: 'ck-form', id: 'form-monitor' },
+          h('div', { class: 'ck-form-grid' },
+            UI.field('Nom', name, { required: true }), UI.field('Type', type),
+            UI.field('Cible', target, { required: true, full: true, help: 'Adresses privées, réservées et ports internes refusés (protection anti-SSRF).' }),
+            UI.field('Méthode', method), UI.field('Code attendu', expected), UI.field('Délai max (s)', timeout)),
+          errorBox);
+        const dialog = UI.dialog({ title: 'Nouvelle sonde externe', sub: `Vitrine ${siteId}`, body: form,
+          footer: [UI.btn('Annuler', { variant: 'ghost', attrs: { 'data-ck-close': '' } }), submit] });
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          if (!form.reportValidity()) return;
+          UI.busy(submit, true, 'Vérification…');
+          try {
+            const values = UI.formValues(form);
+            await App.api(api('/monitors'), { method: 'POST', body: { method: 'GET', expected_status: 200, ...values } });
+            Cockpit.closeDialog(dialog);
+            App.toastOk('Sonde ajoutée', 'Elle sera contrôlée au prochain cycle de télémétrie.');
+            await load();
+          } catch (error) {
+            errorBox.querySelector('.ck-alert__text').textContent = error.message;
+            errorBox.classList.add('is-visible');
+          } finally {
+            UI.busy(submit, false);
+          }
+        });
+      }
+
+      /* ---------- Factures & échanges ---------- */
+      function renderInvoices(d) {
+        const t = d.invoice_totals;
+        $('site-invoices-sub').textContent = `${t.count} facture(s) · ${t.pending_count} en attente (${fmt.money(t.pending_total)})`;
+        UI.replace($('site-invoices'), Views.invoicesTable(d.invoices, {
+          showSite: false, actions: (inv) => Views.adminInvoiceActions(inv, load),
+          emptyDesc: 'Aucune facture pour cette vitrine.'
+        }));
+      }
+
+      function renderTickets(d) {
+        const open = d.tickets.filter((t) => t.status !== 'closed').length;
+        $('site-tickets-sub').textContent = `${d.tickets.length} conversation(s) · ${open} en cours`;
+        UI.replace($('site-tickets'), Views.ticketsTable(d.tickets));
+      }
+
+      /* ---------- Modification de la fiche ---------- */
+      function openEditDialog() {
+        const site = data.site;
+        const plans = data.plans;
+        const name = UI.input('name', { id: 'ed-name', required: true, maxlength: 120, value: site.name });
+        const client = UI.select('client_id', [['', '— Aucun'], ...data.clients.map((c) => [c.id, c.username])], { id: 'ed-client', value: site.client_id || '' });
+        const plan = UI.select('plan_id', plans.map((p) => [p.id, p.name]), { id: 'ed-plan', value: site.plan_id });
+        const price = UI.input('price_monthly', { id: 'ed-price', type: 'number', min: 0, step: '0.01', mono: true, value: site.price_monthly });
+        const status = UI.select('contract_status', [['active', 'Actif'], ['paused', 'En pause'], ['cancelled', 'Résilié']], { id: 'ed-status', value: site.contract_status });
+        const since = UI.input('contract_since', { id: 'ed-since', type: 'date', value: (site.contract_since || '').slice(0, 10) });
+        const domain = UI.input('domain', { id: 'ed-domain', mono: true, value: site.domain || '', placeholder: 'exemple.ch' });
+        const registrar = UI.input('domain_registrar', { id: 'ed-registrar', value: (data.record || {}).domain_registrar || '', placeholder: 'Infomaniak, OVH…' });
+        const domainExp = UI.input('domain_expires_at', { id: 'ed-dexp', type: 'date', value: (site.domain_expires_at || '').slice(0, 10) });
+        const sslExp = UI.input('ssl_expires_at', { id: 'ed-sexp', type: 'date', value: (site.ssl_expires_at || '').slice(0, 10) });
+        const repo = UI.input('repo_url', { id: 'ed-repo', type: 'url', mono: true, value: site.repo_url || '' });
+        const notes = UI.textarea('notes', { id: 'ed-notes', rows: 3, maxlength: 4000, value: site.notes || '' });
+        const errorBox = UI.alert({ tone: 'danger', inline: true, text: '', class: 'ck-form-error' });
+        plan.addEventListener('change', () => {
+          const chosen = plans.find((p) => p.id === plan.value);
+          if (chosen) price.value = chosen.price;
+        });
+        const submit = UI.btn('Enregistrer', { variant: 'primary', icon: 'save', type: 'submit', attrs: { form: 'form-site' } });
+        const form = h('form', { class: 'ck-form', id: 'form-site' },
+          h('div', { class: 'ck-form-grid' },
+            UI.field('Nom commercial', name, { required: true }), UI.field('Client', client),
+            UI.field('Formule', plan), UI.field('Prix mensuel (€)', price),
+            UI.field('Contrat', status), UI.field('Client depuis', since),
+            UI.field('Domaine', domain, { optional: true }), UI.field('Registrar', registrar, { optional: true }),
+            UI.field('Expiration du domaine', domainExp, { optional: true }), UI.field('Expiration SSL', sslExp, { optional: true, help: 'Vide : renouvelé automatiquement par le proxy.' }),
+            UI.field('Dépôt Git', repo, { optional: true, full: true, help: `${Views.repoHelp(data.private_repos)} Utilisé par « Déployer » et « Reconstruire ».` }),
+            UI.field('Notes internes', notes, { optional: true, full: true })),
+          errorBox);
+        const dialog = UI.dialog({ title: 'Modifier la fiche', sub: site.site_id, subMono: true, size: 'lg', body: form,
+          footer: [UI.btn('Annuler', { variant: 'ghost', attrs: { 'data-ck-close': '' } }), submit] });
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          if (!form.reportValidity()) return;
+          const values = UI.formValues(form);
+          ['domain_expires_at', 'ssl_expires_at'].forEach((key) => { if (!values[key]) values[key] = null; });
+          if (!values.contract_since) delete values.contract_since;   // colonne obligatoire : inchangée si vide
+          ['repo_url', 'domain', 'domain_registrar'].forEach((key) => { if (!values[key]) values[key] = null; });
+          UI.busy(submit, true, 'Enregistrement…');
+          try {
+            await App.api(api(), { method: 'PATCH', body: values });
+            Cockpit.closeDialog(dialog);
+            App.toastOk('Fiche enregistrée', site.name);
+            await load();
+          } catch (error) {
+            errorBox.querySelector('.ck-alert__text').textContent = error.message;
+            errorBox.classList.add('is-visible');
+          } finally {
+            UI.busy(submit, false);
+          }
+        });
+      }
+
+      let trafficKey = '';
+      async function load() {
+        data = await App.api(api());
+        renderHead(data.site);
+        renderKpis(data);
+        renderRecord(data);
+        renderMonitors(data);
+        renderInvoices(data);
+        renderTickets(data);
+        const key = JSON.stringify(data.traffic.series);
+        if (key !== trafficKey) {
+          trafficKey = key;
+          Views.trafficChart($('site-traffic'), data.traffic.series, { height: 260, ariaLabel: `Fréquentation de ${data.site.name}` });
+        }
+      }
+
+      function notFound() {
+        UI.replace($('site-root'), UI.card({ body: UI.empty({
+          title: 'Site introuvable', desc: "Cette vitrine n'existe pas ou a été supprimée.", icon: 'globe',
+          actions: [UI.btn('Retour aux sites', { href: '/admin/sites', variant: 'primary', size: 'sm' })]
+        }) }));
+      }
+
+      $('btn-edit-site').addEventListener('click', () => data && openEditDialog());
+      $('btn-add-monitor').addEventListener('click', openMonitorDialog);
+      $('btn-new-invoice').addEventListener('click', () => data && Views.invoiceDialog({
+        sites: [{ site_id: data.site.site_id, name: data.site.name, price_monthly: data.site.price_monthly }],
+        siteId: data.site.site_id, onCreated: load
+      }));
+
+      App.onRefresh(load);
+      App.boot(async ({ status }) => {
+        status('Chargement de la fiche vitrine…');
+        try {
+          await load();
+        } catch (error) {
+          if (error.status === 404) { notFound(); return; }
+          throw error;
+        }
+      }, { shell: 'admin' }).then(() => App.poll(() => load().catch(() => {}), 30000));
+    })();
+    </script>
+  </body>
+</html>

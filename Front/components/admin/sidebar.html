@@ -1,0 +1,89 @@
+<!-- Navigation du cockpit agence (lien actif : App.shell, selon l'URL) -->
+<aside class="ck-sidebar" id="app-sidebar" aria-label="Navigation cockpit">
+  <div class="ck-sidebar__brand">
+    <a href="/admin/dashboard" class="ck-brand">
+      <span class="ck-brand__mark"><svg class="ck-icon" aria-hidden="true"><use href="#i-layers"/></svg></span>
+      <span class="ck-brand__text">
+        <span class="ck-brand__title">Cockpit WaaS</span>
+        <span class="ck-brand__sub">29th studio</span>
+      </span>
+    </a>
+  </div>
+
+  <nav class="ck-sidebar__nav" aria-label="Navigation principale">
+    <div class="ck-nav-group">
+      <span class="ck-nav-group__title">Général</span>
+      <ul class="ck-nav" role="list">
+        <li><a href="/admin/dashboard" class="ck-nav__link" data-nav="/admin/dashboard">
+          <svg class="ck-icon ck-nav__icon" aria-hidden="true"><use href="#i-layout-dashboard"/></svg>
+          <span class="ck-nav__label">Tableau de bord</span></a></li>
+      </ul>
+    </div>
+
+    <div class="ck-nav-group">
+      <span class="ck-nav-group__title">Exploitation</span>
+      <ul class="ck-nav" role="list">
+        <li><a href="/admin/sites" class="ck-nav__link" data-nav="/admin/sites">
+          <svg class="ck-icon ck-nav__icon" aria-hidden="true"><use href="#i-globe"/></svg>
+          <span class="ck-nav__label">Sites</span></a></li>
+        <li><a href="/admin/clients" class="ck-nav__link" data-nav="/admin/clients">
+          <svg class="ck-icon ck-nav__icon" aria-hidden="true"><use href="#i-users"/></svg>
+          <span class="ck-nav__label">Clients</span></a></li>
+        <li><a href="/admin/support" class="ck-nav__link" data-nav="/admin/support">
+          <svg class="ck-icon ck-nav__icon" aria-hidden="true"><use href="#i-message"/></svg>
+          <span class="ck-nav__label">Support</span>
+          <span class="ck-count" data-shell="open-tickets" hidden></span></a></li>
+      </ul>
+    </div>
+
+    <div class="ck-nav-group">
+      <span class="ck-nav-group__title">Finances</span>
+      <ul class="ck-nav" role="list">
+        <li><a href="/admin/billing" class="ck-nav__link" data-nav="/admin/billing">
+          <svg class="ck-icon ck-nav__icon" aria-hidden="true"><use href="#i-credit-card"/></svg>
+          <span class="ck-nav__label">Facturation</span></a></li>
+        <li><a href="/admin/renewals" class="ck-nav__link" data-nav="/admin/renewals">
+          <svg class="ck-icon ck-nav__icon" aria-hidden="true"><use href="#i-calendar-clock"/></svg>
+          <span class="ck-nav__label">Renouvellements</span></a></li>
+      </ul>
+    </div>
+
+    <div class="ck-nav-group">
+      <span class="ck-nav-group__title">Infrastructure</span>
+      <ul class="ck-nav" role="list">
+        <li><a href="/admin/vps" class="ck-nav__link" data-nav="/admin/vps">
+          <svg class="ck-icon ck-nav__icon" aria-hidden="true"><use href="#i-server"/></svg>
+          <span class="ck-nav__label">Serveur VPS</span></a></li>
+        <li><a href="/admin/health" class="ck-nav__link" data-nav="/admin/health">
+          <svg class="ck-icon ck-nav__icon" aria-hidden="true"><use href="#i-activity"/></svg>
+          <span class="ck-nav__label">Santé</span></a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="ck-sidebar__footer">
+    <button type="button" class="ck-status-card" data-tone="good" data-shell="alerts" aria-label="Alertes : chargement">
+      <span class="ck-status-card__head"><span class="ck-status-card__dot"></span><span data-shell="alerts-title">Alertes</span></span>
+      <span class="ck-status-card__sub"><svg class="ck-icon" aria-hidden="true"><use href="#i-bell"/></svg><span data-shell="alerts-text">Analyse en cours…</span></span>
+    </button>
+
+    <a href="/admin/settings" class="ck-status-card" data-nav="/admin/settings">
+      <span class="ck-status-card__head"><svg class="ck-icon" aria-hidden="true"><use href="#i-database"/></svg>Config plateforme</span>
+      <span class="ck-status-card__sub">Supabase, URLs &amp; sécurité</span>
+    </a>
+
+    <span class="ck-clock"><svg class="ck-icon" aria-hidden="true"><use href="#i-clock"/></svg><span data-ck-clock>--:--:--</span></span>
+
+    <div class="ck-user">
+      <span class="ck-avatar ck-avatar--sm" data-shell="avatar">{{shell_avatar}}</span>
+      <span class="ck-user__text">
+        <span class="ck-user__name" data-shell="username">{{shell_username}}</span>
+        <span class="ck-user__role">29th studio · Agence</span>
+      </span>
+      <a href="/logout" class="ck-btn ck-btn--ghost ck-btn--xs ck-btn--icon" aria-label="Se déconnecter" title="Se déconnecter">
+        <svg class="ck-icon" aria-hidden="true"><use href="#i-log-out"/></svg>
+      </a>
+    </div>
+    <p class="ck-sidebar__credit">Designed &amp; built by Andi Ajruli — <a href="https://29th.studio" target="_blank" rel="noopener">29th studio</a> · © 2026</p>
+  </div>
+</aside>

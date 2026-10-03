@@ -1,0 +1,717 @@
+/* ==========================================================================
+   Cockpit DS — 05 · Formulaires
+   Champs, sélecteurs, cases, interrupteurs, segments, zone de dépôt,
+   étapes, arborescence, mises en page de formulaire.
+   Contour des champs ≥ 3:1 (WCAG 1.4.11) — hauteurs alignées sur les boutons.
+   ========================================================================== */
+
+.ck-input,
+.ck-select,
+.ck-textarea {
+  --ctl-h: var(--ck-h-md);
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: var(--ctl-h);
+  padding: 0 var(--ck-space-10);
+  border: 1px solid var(--ck-line-control);
+  border-radius: var(--ck-radius-sm);
+  background: var(--ck-surface);
+  color: var(--ck-ink-1);
+  font-size: var(--ck-text-13);
+  line-height: 20px;
+  box-shadow: var(--ck-shadow-xs);
+  outline: none;
+  transition:
+    border-color var(--ck-dur-1) var(--ck-ease-out),
+    box-shadow var(--ck-dur-1) var(--ck-ease-out),
+    background-color var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-input::placeholder,
+.ck-textarea::placeholder {
+  color: var(--ck-ink-3);
+  opacity: 1;
+}
+
+.ck-input:hover,
+.ck-select:hover,
+.ck-textarea:hover {
+  border-color: var(--ck-ink-3);
+}
+
+.ck-input:focus,
+.ck-select:focus,
+.ck-textarea:focus {
+  border-color: var(--ck-accent);
+  box-shadow: var(--ck-focus-ring);
+}
+
+.ck-input[aria-invalid="true"],
+.ck-select[aria-invalid="true"],
+.ck-textarea[aria-invalid="true"] {
+  border-color: var(--ck-danger);
+}
+
+.ck-input[aria-invalid="true"]:focus,
+.ck-select[aria-invalid="true"]:focus,
+.ck-textarea[aria-invalid="true"]:focus {
+  box-shadow: var(--ck-danger-ring);
+}
+
+.ck-input:disabled,
+.ck-select:disabled,
+.ck-textarea:disabled {
+  border-color: var(--ck-line);
+  background: var(--ck-surface-2);
+  color: var(--ck-ink-4);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.ck-input[readonly] {
+  border-color: var(--ck-line-strong);
+  background: var(--ck-surface-2);
+}
+
+.ck-input--sm,
+.ck-select--sm {
+  --ctl-h: var(--ck-h-sm);
+  font-size: var(--ck-text-12);
+}
+
+.ck-input--lg,
+.ck-select--lg {
+  --ctl-h: var(--ck-h-lg);
+  padding: 0 var(--ck-space-12);
+  font-size: var(--ck-text-14);
+}
+
+.ck-input--mono {
+  font-family: var(--ck-font-mono);
+  font-stretch: var(--ck-mono-stretch);
+  font-size: var(--ck-text-12);
+  letter-spacing: -0.01em;
+}
+
+.ck-select {
+  padding-right: 32px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23636975' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 10px center;
+  background-repeat: no-repeat;
+  background-size: 14px;
+  cursor: pointer;
+}
+
+.ck-textarea {
+  height: auto;
+  min-height: 88px;
+  padding: var(--ck-space-8) var(--ck-space-10);
+  line-height: var(--ck-leading-body);
+  resize: vertical;
+}
+
+/* Champ complet : libellé + contrôle + aide/erreur ------------------------- */
+.ck-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-6);
+  min-width: 0;
+}
+
+.ck-label {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ck-space-4);
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+  font-weight: var(--ck-weight-semibold);
+  color: var(--ck-ink-1);
+}
+
+.ck-label__req {
+  color: var(--ck-danger-ink);
+}
+
+.ck-label__opt {
+  font-weight: var(--ck-weight-regular);
+  color: var(--ck-ink-3);
+}
+
+.ck-help {
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+  color: var(--ck-ink-3);
+}
+
+.ck-field__error {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-6);
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+  font-weight: var(--ck-weight-medium);
+  color: var(--ck-danger-ink);
+}
+
+.ck-field__error .ck-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Groupe avec préfixe/suffixe (https://, .29th.site…) ---------------------- */
+.ck-input-group {
+  --ctl-h: var(--ck-h-md);
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+  height: var(--ctl-h);
+  border: 1px solid var(--ck-line-control);
+  border-radius: var(--ck-radius-sm);
+  background: var(--ck-surface);
+  box-shadow: var(--ck-shadow-xs);
+  overflow: hidden;
+  transition:
+    border-color var(--ck-dur-1) var(--ck-ease-out),
+    box-shadow var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-input-group:hover {
+  border-color: var(--ck-ink-3);
+}
+
+.ck-input-group:focus-within {
+  border-color: var(--ck-accent);
+  box-shadow: var(--ck-focus-ring);
+}
+
+.ck-input-group > .ck-input {
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.ck-input-group > .ck-input:focus {
+  box-shadow: none;
+}
+
+.ck-input-group__addon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0 var(--ck-space-10);
+  background: var(--ck-surface-2);
+  color: var(--ck-ink-3);
+  font-family: var(--ck-font-mono);
+  font-stretch: var(--ck-mono-stretch);
+  font-size: var(--ck-text-12);
+  white-space: nowrap;
+}
+
+.ck-input-group__addon:first-child {
+  border-right: var(--ck-border);
+}
+
+.ck-input-group__addon:last-child {
+  border-left: var(--ck-border);
+}
+
+/* Recherche ----------------------------------------------------------------- */
+.ck-search {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Dans une barre d'outils, la recherche garde une largeur de lecture */
+.ck-spread > .ck-search,
+.ck-cluster > .ck-search {
+  max-width: 360px;
+}
+
+.ck-search > .ck-icon {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  width: 15px;
+  height: 15px;
+  color: var(--ck-ink-3);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.ck-search > .ck-input {
+  padding-left: 32px;
+}
+
+.ck-search > .ck-kbd {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   Cases à cocher, radios, interrupteurs (sans pseudo-éléments : compatibles
+   avec tous les navigateurs)
+   -------------------------------------------------------------------------- */
+.ck-check {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--ck-space-8);
+  color: var(--ck-ink-2);
+  font-size: var(--ck-text-13);
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.ck-check__hint {
+  display: block;
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+  color: var(--ck-ink-3);
+}
+
+.ck-checkbox,
+.ck-radio {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border: 1px solid var(--ck-line-control);
+  border-radius: var(--ck-radius-xs);
+  background-color: var(--ck-surface);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 12px;
+  appearance: none;
+  cursor: pointer;
+  transition:
+    background-color var(--ck-dur-1) var(--ck-ease-out),
+    border-color var(--ck-dur-1) var(--ck-ease-out),
+    box-shadow var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-radio {
+  border-radius: 50%;
+}
+
+.ck-checkbox:hover,
+.ck-radio:hover {
+  border-color: var(--ck-ink-2);
+}
+
+.ck-checkbox:checked {
+  border-color: var(--ck-accent);
+  background-color: var(--ck-accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+}
+
+.ck-checkbox:indeterminate {
+  border-color: var(--ck-accent);
+  background-color: var(--ck-accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3.2' stroke-linecap='round'%3E%3Cpath d='M6 12h12'/%3E%3C/svg%3E");
+}
+
+.ck-radio:checked {
+  border-color: var(--ck-accent);
+  background-color: var(--ck-accent);
+  box-shadow: inset 0 0 0 3px var(--ck-surface);
+}
+
+.ck-checkbox:disabled,
+.ck-radio:disabled,
+.ck-switch:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ck-switch {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 32px;
+  height: 18px;
+  margin-top: 1px;
+  border: 0;
+  border-radius: var(--ck-radius-pill);
+  background-color: var(--ck-line-control);
+  background-image: radial-gradient(circle, var(--ck-white) 6.5px, transparent 7px);
+  background-position: 0 0;
+  background-repeat: no-repeat;
+  background-size: 18px 18px;
+  appearance: none;
+  cursor: pointer;
+  transition:
+    background-color var(--ck-dur-2) var(--ck-ease-out),
+    background-position var(--ck-dur-2) var(--ck-ease-out);
+}
+
+.ck-switch:checked {
+  background-color: var(--ck-accent);
+  background-position: 14px 0;
+}
+
+/* --------------------------------------------------------------------------
+   Contrôle segmenté (appareil, période, vue)
+   Rayon imbriqué : 4px (segment) + 2px (marge) = 6px (conteneur)
+   -------------------------------------------------------------------------- */
+.ck-segmented {
+  --seg-h: var(--ck-h-md);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ck-space-2);
+  height: var(--seg-h);
+  padding: var(--ck-space-2);
+  max-width: 100%;
+  border-radius: var(--ck-radius-sm);
+  background: var(--ck-surface-3);
+  /* Trop d’options pour la largeur : défilement horizontal, jamais de débordement */
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ck-segmented__item {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ck-space-6);
+  height: 100%;
+  padding: 0 var(--ck-space-10);
+  border-radius: var(--ck-radius-xs);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-12);
+  font-weight: var(--ck-weight-semibold);
+  white-space: nowrap;
+  transition:
+    background-color var(--ck-dur-1) var(--ck-ease-out),
+    color var(--ck-dur-1) var(--ck-ease-out),
+    box-shadow var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-segmented__item:hover {
+  color: var(--ck-ink-1);
+}
+
+.ck-segmented__item[aria-pressed="true"],
+.ck-segmented__item[aria-selected="true"],
+.ck-segmented__item.is-active {
+  background: var(--ck-surface);
+  color: var(--ck-ink-1);
+  box-shadow: 0 1px 2px rgba(15, 22, 35, 0.08), 0 0 0 1px rgba(15, 22, 35, 0.04);
+}
+
+.ck-segmented__item .ck-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.ck-segmented--sm {
+  --seg-h: var(--ck-h-sm);
+}
+
+.ck-segmented--sm .ck-segmented__item {
+  padding: 0 var(--ck-space-8);
+}
+
+/* --------------------------------------------------------------------------
+   Zone de dépôt (archive ZIP / dossier)
+   -------------------------------------------------------------------------- */
+.ck-dropzone {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  border: 1px dashed var(--ck-line-control);
+  border-radius: var(--ck-radius-md);
+  background: var(--ck-surface-2);
+  overflow: hidden;
+  transition:
+    border-color var(--ck-dur-2) var(--ck-ease-out),
+    background-color var(--ck-dur-2) var(--ck-ease-out);
+}
+
+.ck-dropzone__part {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ck-space-2);
+  padding: var(--ck-space-20) var(--ck-space-12);
+  color: var(--ck-ink-3);
+  text-align: center;
+  cursor: pointer;
+  transition: background-color var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-dropzone__part + .ck-dropzone__part {
+  border-left: 1px dashed var(--ck-line-strong);
+}
+
+.ck-dropzone__part:hover,
+.ck-dropzone__part:focus-visible {
+  background: var(--ck-accent-soft);
+  outline-offset: -2px;
+}
+
+.ck-dropzone__icon {
+  width: 24px;
+  height: 24px;
+  margin-bottom: var(--ck-space-6);
+  color: var(--ck-accent);
+  transition: transform var(--ck-dur-2) var(--ck-ease-out);
+}
+
+.ck-dropzone__part:hover .ck-dropzone__icon {
+  transform: translateY(-2px);
+}
+
+.ck-dropzone__title {
+  font-size: var(--ck-text-13);
+  font-weight: var(--ck-weight-semibold);
+  color: var(--ck-ink-1);
+}
+
+.ck-dropzone__hint {
+  font-size: var(--ck-text-12);
+  color: var(--ck-ink-3);
+}
+
+.ck-dropzone.is-dragover {
+  border-style: solid;
+  border-color: var(--ck-accent);
+  background: var(--ck-accent-soft);
+}
+
+.ck-file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ck-space-6);
+  max-width: 100%;
+  height: var(--ck-h-sm);
+  padding: 0 var(--ck-space-10);
+  border: 1px solid var(--ck-good-line);
+  border-radius: var(--ck-radius-sm);
+  background: var(--ck-good-soft);
+  color: var(--ck-good-ink);
+  font-size: var(--ck-text-12);
+  font-weight: var(--ck-weight-semibold);
+}
+
+.ck-file-chip > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ck-file-chip .ck-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* --------------------------------------------------------------------------
+   Étapes (assistant de configuration)
+   -------------------------------------------------------------------------- */
+.ck-steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ck-space-10);
+  list-style: none;
+}
+
+.ck-steps__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ck-space-8);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-12);
+  font-weight: var(--ck-weight-semibold);
+}
+
+.ck-steps__dot {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: var(--ck-border-strong);
+  border-radius: 50%;
+  background: var(--ck-surface);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-11);
+  font-weight: var(--ck-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.ck-steps__dot .ck-icon {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2.5;
+}
+
+.ck-steps__item.is-current {
+  color: var(--ck-ink-1);
+}
+
+.ck-steps__item.is-current .ck-steps__dot {
+  border-color: var(--ck-accent);
+  background: var(--ck-accent);
+  color: var(--ck-on-accent);
+  box-shadow: 0 0 0 3px var(--ck-accent-100);
+}
+
+.ck-steps__item.is-done .ck-steps__dot {
+  border-color: var(--ck-accent-line);
+  background: var(--ck-accent-soft);
+  color: var(--ck-accent-ink);
+}
+
+.ck-steps__sep {
+  width: 32px;
+  height: 1px;
+  background: var(--ck-line-strong);
+}
+
+.ck-steps__sep.is-done {
+  background: var(--ck-accent-300);
+}
+
+/* --------------------------------------------------------------------------
+   Arborescence (sélection de la racine à déployer)
+   Rayon imbriqué : 6px (nœud) + 4px (marge) = 10px (conteneur)
+   -------------------------------------------------------------------------- */
+.ck-tree {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-2);
+  max-height: 232px;
+  padding: var(--ck-space-4);
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-md);
+  background: var(--ck-surface-2);
+  overflow-y: auto;
+  list-style: none;
+}
+
+.ck-tree__node {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-8);
+  width: 100%;
+  height: var(--ck-h-md);
+  padding: 0 var(--ck-space-10) 0 calc(var(--ck-space-10) + var(--depth, 0) * 18px);
+  border: 1px solid transparent;
+  border-radius: var(--ck-radius-sm);
+  color: var(--ck-ink-2);
+  font-size: var(--ck-text-13);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--ck-dur-1) var(--ck-ease-out),
+    color var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-tree__node:hover {
+  background: var(--ck-surface);
+  color: var(--ck-ink-1);
+}
+
+.ck-tree__node .ck-icon {
+  width: 15px;
+  height: 15px;
+  color: var(--ck-ink-3);
+}
+
+.ck-tree__node.is-selected,
+.ck-tree__node[aria-selected="true"] {
+  border-color: var(--ck-accent-line);
+  background: var(--ck-accent-soft);
+  color: var(--ck-accent-ink);
+  font-weight: var(--ck-weight-semibold);
+}
+
+.ck-tree__node.is-selected .ck-icon,
+.ck-tree__node[aria-selected="true"] .ck-icon {
+  color: var(--ck-accent);
+}
+
+.ck-tree__name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ck-tree__badge {
+  margin-left: auto;
+  padding: 1px var(--ck-space-6);
+  border-radius: var(--ck-radius-xs);
+  background: var(--ck-good-soft);
+  color: var(--ck-good-ink);
+  font-family: var(--ck-font-mono);
+  font-stretch: var(--ck-mono-stretch);
+  font-size: 10.5px;
+  font-weight: var(--ck-weight-medium);
+}
+
+.ck-tree__check {
+  visibility: hidden;
+  color: var(--ck-accent);
+}
+
+.ck-tree__name + .ck-tree__check {
+  margin-left: auto;
+}
+
+.ck-tree__node.is-selected .ck-tree__check,
+.ck-tree__node[aria-selected="true"] .ck-tree__check {
+  visibility: visible;
+}
+
+/* --------------------------------------------------------------------------
+   Mises en page de formulaire
+   -------------------------------------------------------------------------- */
+.ck-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-16);
+}
+
+/* Formulaire réduit à son bouton (action POST dans une ligne de tableau, une barre…) */
+.ck-form-inline {
+  display: inline-flex;
+  margin: 0;
+}
+
+.ck-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ck-space-16) var(--ck-space-12);
+}
+
+.ck-form-grid > .is-full {
+  grid-column: 1 / -1;
+}
+
+.ck-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ck-gap-sm);
+  padding-top: var(--ck-space-16);
+  border-top: var(--ck-border-soft);
+}
+
+.ck-form-actions--between {
+  justify-content: space-between;
+}
+
+@media (max-width: 640px) {
+  .ck-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

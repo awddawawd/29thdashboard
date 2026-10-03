@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <title>Support · Cockpit WaaS</title>
+    <meta name="description" content="Messagerie support : conversations avec les clients, réponses du studio et suivi des demandes.">
+    <!-- @include head.html -->
+  </head>
+  <body>
+    <!-- @include body-start.html brand="Cockpit WaaS" -->
+
+    <div class="ck-app" id="cockpit-app">
+      <!-- @include admin/sidebar.html -->
+      <div class="ck-scrim"></div>
+
+      <div class="ck-main">
+        <!-- @include admin/topbar.html title="Support" -->
+
+        <main class="ck-content" id="main" tabindex="-1">
+          <div class="ck-stack">
+            <div id="support-schema" hidden></div>
+            <div class="ck-inbox" id="support-inbox">
+              <div id="support-list" data-slot>
+                <!-- @include skeleton/conversations.html -->
+              </div>
+              <div id="support-thread" data-slot>
+                <!-- @include skeleton/thread.html -->
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div id="modal-container"></div>
+
+    <!-- @include scripts.html -->
+    <script>
+    (function () {
+      'use strict';
+      const $ = (id) => document.getElementById(id);
+      const state = { tickets: [], filter: App.param('filter') === 'all' ? 'all' : 'open', selected: App.param('ticket'), thread: null, schema: true };
+
+      function hrefFor(ticket) {
+        return `/admin/support?ticket=${encodeURIComponent(ticket.id)}${state.filter === 'all' ? '&filter=all' : ''}`;
+      }
+
+      function renderList() {
+        UI.replace($('support-list'), Views.conversationList({
+          tickets: state.tickets, selectedId: state.selected, hrefFor, title: 'Conversations',
+          onSelect: (ticket) => select(ticket.id),
+          filter: { value: state.filter, onChange: (value) => { state.filter = value; App.setParam('filter', value === 'all' ? 'all' : null); loadList(); } },
+          emptyText: state.filter === 'open' ? 'Aucune conversation ouverte pour le moment.' : 'Les messages envoyés par les clients apparaîtront ici.'
+        }));
+      }
+
+      function renderThread() {
+        const box = $('support-thread');
+        if (!state.thread) {
+          UI.replace(box, state.filter === 'open' && !state.tickets.length
+            ? Views.emptyThread('Aucune conversation ouverte', 'Toutes les conversations sont résolues. Cliquez sur « Tous » pour afficher l\'historique complet.')
+            : Views.emptyThread('Aucune conversation sélectionnée', 'Sélectionnez une conversation dans la liste pour afficher les messages.'));
+        } else {
+          const t = state.thread;
+          UI.replace(box, Views.threadCard(t, {
+            subtitle: `Site : ${t.site_name} · créé le ${UI.fmt.date(t.created_at)}`,
+            placeholder: 'Écrivez votre réponse au client… (Ctrl+Entrée pour envoyer)',
+            hint: 'Le client voit votre réponse dans son espace.',
+            resolveLabel: 'Fermer le ticket', reopenLabel: 'Rouvrir',
+            onReply: async (body) => {
+              const res = await App.api(`/admin/api/tickets/${encodeURIComponent(t.id)}/messages`, { method: 'POST', body: { body } });
+              state.thread = res.ticket;
+              renderThread();
+              await loadList();
+            },
+            onToggle: async (status) => {
+              try {
+                const res = await App.api(`/admin/api/tickets/${encodeURIComponent(t.id)}/status`, { method: 'POST', body: { status } });
+                state.thread = res.ticket;
+                App.toastOk(status === 'closed' ? 'Ticket fermé' : 'Ticket rouvert', t.subject);
+                renderThread();
+                await loadList();
+              } catch (error) { App.toastError(error); }
+            }
+          }));
+        }
+      }
+
+      async function select(ticketId) {
+        state.selected = ticketId;
+        App.setParam('ticket', ticketId);
+        renderList();
+        try {
+          state.thread = (await App.api(`/admin/api/tickets/${encodeURIComponent(ticketId)}`)).ticket;
+        } catch (error) {
+          state.thread = null;
+          if (error.status !== 404) App.toastError(error);
+        }
+        renderThread();
+      }
+
+      async function loadList() {
+        const data = await App.api('/admin/api/tickets', { query: { filter: state.filter } });
+        state.tickets = data.tickets;
+        state.schema = data.schema_ready;
+        const box = $('support-schema');
+        box.hidden = state.schema;
+        if (!state.schema) {
+          UI.replace(box, UI.alert({ tone: 'warn', bar: true, icon: 'database', title: 'Migration Supabase requise',
+            text: 'Les tables « tickets » et « ticket_messages » n\'existent pas encore : exécutez End/migrations/001_cockpit.sql.' }));
+        }
+        if (!state.selected && state.tickets.length) state.selected = state.tickets[0].id;
+        renderList();
+      }
+
+      async function load() {
+        await loadList();
+        if (state.selected) await select(state.selected);
+        else renderThread();
+      }
+
+      /** Sondage : liste + fil ouvert, sans écraser une réponse en cours de saisie. */
+      async function refresh() {
+        await loadList();
+        const typing = document.activeElement && document.activeElement.id === 'support-reply' && document.activeElement.value;
+        if (state.selected && !typing) {
+          const res = await App.api(`/admin/api/tickets/${encodeURIComponent(state.selected)}`).catch(() => null);
+          if (res && JSON.stringify(res.ticket.messages) !== JSON.stringify((state.thread || {}).messages)) {
+            state.thread = res.ticket;
+            renderThread();
+          }
+        }
+      }
+
+      App.onRefresh(refresh);
+      App.boot(async ({ status }) => {
+        status('Chargement des conversations…');
+        await load();
+      }, { shell: 'admin' }).then(() => App.poll(() => refresh().catch(() => {}), 15000));
+    })();
+    </script>
+  </body>
+</html>

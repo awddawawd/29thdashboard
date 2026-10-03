@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <title>{{title}} · Cockpit WaaS</title>
+    <!-- @include head.html -->
+  </head>
+  <body>
+    <main class="ck-auth" id="main" tabindex="-1">
+      <article class="ck-auth__card ck-error-card">
+        <div class="ck-auth__brand">
+          <span class="ck-auth__mark">
+            <svg class="ck-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/>
+              <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/>
+              <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/>
+            </svg>
+          </span>
+          <p class="ck-error-card__code">{{status}}</p>
+          <h1 class="ck-auth__title">{{title}}</h1>
+          <p class="ck-auth__sub">{{message}}</p>
+        </div>
+        <a href="{{href}}" class="ck-btn ck-btn--primary ck-btn--lg ck-btn--block">{{label}}</a>
+        <p class="ck-auth__foot">Designed &amp; built by Andi Ajruli — 29th studio · © 2026</p>
+      </article>
+    </main>
+  </body>
+</html>

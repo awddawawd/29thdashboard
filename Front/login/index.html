@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="utf-8">
+  <title>Connexion · Cockpit WaaS</title>
+  <meta name="description" content="Connexion au cockpit agence et à l'espace client 29th studio.">
+  <!-- @include head.html -->
+</head>
+
+<body>
+  <!-- @include attribution.html -->
+
+  <a href="#main" class="ck-skip-link">Aller au contenu</a>
+
+  <main tabindex="-1" id="main">
+    <div class="ck-auth">
+      <div class="ck-auth__card">
+        <div class="ck-auth__brand">
+          <span class="ck-auth__mark">
+            <svg class="ck-icon" aria-hidden="true">
+              <use href="#i-layers" />
+            </svg>
+          </span>
+          <h1 class="ck-auth__title">Cockpit WaaS</h1>
+          <p class="ck-auth__sub">Gestion des vitrines, éditeur Studio &amp; espace client</p>
+        </div>
+
+        <!-- Zone d'alerte dynamique (erreur / succès) -->
+        <div id="auth-alert" role="alert" class="ck-alert ck-alert--inline" data-tone="danger"
+          style="display: none; margin-bottom: var(--ck-space-16, 16px);">
+          <svg class="ck-icon ck-alert__icon" aria-hidden="true" id="auth-alert-icon">
+            <use href="#i-alert-circle" />
+          </svg>
+          <div class="ck-alert__body">
+            <p class="ck-alert__text" id="auth-alert-text"></p>
+          </div>
+        </div>
+
+        <form action="/cockpit/login" method="post" class="ck-form" id="login-form">
+          <div class="ck-field">
+            <label for="login-email" class="ck-label">Identifiant ou e-mail</label>
+            <input name="email" type="text" autocomplete="username" placeholder="vous@exemple.com" id="login-email"
+              class="ck-input ck-input--lg">
+          </div>
+
+          <div class="ck-field">
+            <label for="login-password" class="ck-label">Mot de passe</label>
+            <input name="password" type="password" autocomplete="current-password" placeholder="••••••••••••"
+              id="login-password" class="ck-input ck-input--lg">
+          </div>
+
+          <button type="submit" class="ck-btn ck-btn--primary ck-btn--lg ck-btn--block" id="btn-submit">
+            Se connecter
+          </button>
+        </form>
+
+        <p class="ck-auth__foot">
+          Designed &amp; built by Andi Ajruli — <a href="https://29th.studio" target="_blank" rel="noopener" class="ck-link ck-link--muted">29th studio</a> · © 2026
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/cockpit.js?v={{v}}"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      // Une nouvelle session ne doit jamais réafficher la coque d'un compte
+      // précédent (cache de session utilisé par Front/js/app.js).
+      try {
+        Object.keys(window.sessionStorage)
+          .filter(function (key) { return key.indexOf('waas:shell:') === 0; })
+          .forEach(function (key) { window.sessionStorage.removeItem(key); });
+      } catch (error) { /* stockage indisponible : rien à purger */ }
+
+      const form = document.getElementById('login-form');
+      const alertBox = document.getElementById('auth-alert');
+      const alertText = document.getElementById('auth-alert-text');
+      const alertIconUse = document.querySelector('#auth-alert-icon use');
+      const submitBtn = document.getElementById('btn-submit');
+      const emailInput = document.getElementById('login-email');
+      const passwordInput = document.getElementById('login-password');
+
+      /**
+       * Détermine l'URL de l'API à partir de window.API_URL injecté par Flask (run.py).
+       */
+      function getApiUrl() {
+        const base = (window.API_URL || '').replace(/\/+$/, '');
+        return base ? `${base}/api/login` : '/api/login';
+      }
+
+      /**
+       * Affiche un message d'erreur
+       * @param {string} [message] Message d'erreur personnalisé
+       */
+      function showError(message) {
+        const msg = message != null && String(message).trim() ? String(message) : 'Email ou mot de passe incorrect.';
+        alertBox.setAttribute('data-tone', 'danger');
+        alertIconUse.setAttribute('href', '#i-alert-circle');
+        alertText.textContent = msg;
+        alertBox.style.display = 'flex';
+        return msg;
+      }
+
+      /**
+       * Affiche un message de succès
+       * @param {string} [message] Message de succès personnalisé
+       */
+      function showSuccess(message) {
+        const msg = message != null && String(message).trim() ? String(message) : 'Connexion réussie !';
+        alertBox.setAttribute('data-tone', 'good');
+        alertIconUse.setAttribute('href', '#i-check-circle');
+        alertText.textContent = msg;
+        alertBox.style.display = 'flex';
+        return msg;
+      }
+
+      /**
+       * Masque l'alerte courante
+       */
+      function hideAlert() {
+        alertBox.style.display = 'none';
+        alertText.textContent = '';
+        return true;
+      }
+
+      /**
+       * Contrôle l'état de chargement du bouton de connexion
+       * @param {boolean|string} [state=true] true/'loading' pour activer, false/'unloading' pour désactiver
+       */
+      function setLoading(state = true) {
+        const isLoading = state === true || state === 'loading' || state === 'start' || (state !== false && state !== 'unloading' && state !== 'stop');
+        if (isLoading) {
+          submitBtn.classList.add('is-loading');
+          submitBtn.disabled = true;
+          submitBtn.setAttribute('aria-busy', 'true');
+        } else {
+          submitBtn.classList.remove('is-loading');
+          submitBtn.disabled = false;
+          submitBtn.removeAttribute('aria-busy');
+        }
+        return isLoading;
+      }
+
+      function startLoading() {
+        return setLoading(true);
+      }
+
+      function stopLoading() {
+        return setLoading(false);
+      }
+
+      /**
+       * Réinitialise le formulaire, l'alerte et l'état du bouton
+       */
+      function reset() {
+        hideAlert();
+        setLoading(false);
+        form.reset();
+      }
+
+      /**
+       * Exécute la requête d'authentification vers l'API
+       * @param {string} [email]
+       * @param {string} [password]
+       */
+      async function submitLogin(email, password) {
+        const emailVal = email !== undefined ? String(email).trim() : (emailInput.value || '').trim();
+        const pwdVal = password !== undefined ? String(password) : (passwordInput.value || '');
+
+        if (!emailVal || !pwdVal) {
+          showError('Veuillez renseigner votre identifiant et votre mot de passe.');
+          return { success: false, message: 'Champs requis manquants.' };
+        }
+
+        hideAlert();
+        setLoading(true);
+
+        const targetUrl = getApiUrl();
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectParam = urlParams.get('redirect') || urlParams.get('next') || undefined;
+
+        try {
+          const response = await fetch(targetUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+              email: emailVal,
+              username: emailVal,
+              password: pwdVal,
+              redirect: redirectParam
+            })
+          });
+
+          // 1. Prise en charge spécifique des erreurs serveur et passerelles
+          if (response.status === 502) {
+            const msg = "Service non disponible actuellement (502 Bad Gateway). Veuillez réessayer dans quelques instants.";
+            showError(msg);
+            return { success: false, status: 502, message: msg };
+          }
+
+          if (response.status === 503) {
+            const msg = "Service temporairement indisponible (503 Service Unavailable). Maintenance en cours.";
+            showError(msg);
+            return { success: false, status: 503, message: msg };
+          }
+
+          if (response.status === 504) {
+            const msg = "Délai de réponse dépassé (504 Gateway Timeout). Le serveur met trop de temps à répondre.";
+            showError(msg);
+            return { success: false, status: 504, message: msg };
+          }
+
+          // 2. Traitement des réponses JSON de l'API
+          const data = await response.json().catch(() => null);
+          const serverMsg = data && (data.message || data.detail);
+
+          if (response.ok && (!data || data.success !== false)) {
+            const successMsg = serverMsg || "Connexion réussie ! Redirection en cours…";
+            showSuccess(successMsg);
+
+            // Sécurité anti-XSS : le jeton n'est plus stocké dans le localStorage
+            // L'authentification du navigateur repose exclusivement sur le cookie HttpOnly sécurisé
+            try {
+              localStorage.removeItem('waas_token');
+              localStorage.removeItem('access_token');
+              if (data && data.role) localStorage.setItem('waas_role', data.role);
+            } catch (_) { }
+
+            // Redirection automatique déterminée par l'API
+            const redirectUrl = (data && data.redirect_url) ? data.redirect_url : '/portal';
+            setTimeout(function () {
+              window.location.replace(redirectUrl);
+            }, 600);
+
+            return { success: true, status: response.status, data, message: successMsg };
+          } else {
+            // Échec d'authentification ou erreur métier (400, 401, 403, 404, 500, etc.)
+            let fallbackMsg = "Identifiant ou mot de passe incorrect.";
+            if (response.status === 404) {
+              fallbackMsg = "Point d'accès API introuvable (404).";
+            } else if (response.status >= 500) {
+              fallbackMsg = "Erreur interne du serveur. Veuillez réessayer plus tard.";
+            }
+
+            const errorMsg = serverMsg || fallbackMsg;
+            showError(errorMsg);
+            return { success: false, status: response.status, data, message: errorMsg };
+          }
+        } catch (networkError) {
+          const msg = "Service non disponible actuellement. Impossible de contacter le serveur.";
+          showError(msg);
+          return { success: false, status: 0, error: networkError, message: msg };
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      // Soumission du formulaire par l'utilisateur
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        submitLogin();
+      });
+
+      // Commandes accessibles directement dans la console
+      window.showError = showError;
+      window.showSuccess = showSuccess;
+      window.hideAlert = hideAlert;
+      window.clearAlert = hideAlert;
+      window.setLoading = setLoading;
+      window.startLoading = startLoading;
+      window.stopLoading = stopLoading;
+      window.submitLogin = submitLogin;
+      window.reset = reset;
+
+      // Fonction de test rapide pour simuler un 502 sans proxy
+      window.simulate502 = function () {
+        setLoading(true);
+        hideAlert();
+        setTimeout(function () {
+          setLoading(false);
+          showError("Service non disponible actuellement (502 Bad Gateway). Veuillez réessayer dans quelques instants.");
+        }, 600);
+      };
+
+      // Namespace 'login' pour syntaxe alternative
+      window.login = {
+        showError,
+        showSuccess,
+        hideAlert,
+        clearAlert: hideAlert,
+        setLoading,
+        startLoading,
+        stopLoading,
+        submit: submitLogin,
+        reset,
+        simulate502: window.simulate502,
+        getApiUrl,
+        error: showError,
+        success: showSuccess,
+        loading: setLoading,
+        unload: stopLoading
+      };
+    })();
+  </script>
+</body>
+
+</html>

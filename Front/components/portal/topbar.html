@@ -1,0 +1,21 @@
+<!-- Barre supérieure de l'espace client : titre, choix du site, audience, éditeur -->
+<header class="ck-topbar">
+  <div class="ck-topbar__start">
+    <button type="button" class="ck-btn ck-btn--ghost ck-btn--sm ck-btn--icon ck-topbar__menu" data-ck-nav-toggle aria-label="Ouvrir la navigation" aria-controls="app-sidebar">
+      <svg class="ck-icon" aria-hidden="true"><use href="#i-menu"/></svg>
+    </button>
+    <h1 class="ck-topbar__title">{{title}}</h1>
+    <select class="ck-select ck-select--sm ck-topbar__switch ck-hide-sm" data-shell="site-switch" aria-label="Changer de site" hidden></select>
+  </div>
+  <div class="ck-topbar__end">
+    <span class="ck-live ck-hide-sm is-idle" data-shell="live" title="Visiteurs vus sur votre vitrine depuis 5 minutes">
+      <span class="ck-live__dot"></span><span data-shell="live-text">— en direct</span>
+    </span>
+    <a href="#" class="ck-btn ck-btn--secondary ck-btn--sm ck-hide-sm" data-shell="site-visit" target="_blank" rel="noopener">
+      <svg class="ck-icon" aria-hidden="true"><use href="#i-external"/></svg><span>Voir en direct</span>
+    </a>
+    <a href="/studio" class="ck-btn ck-btn--primary ck-btn--sm" data-site-link="studio" aria-label="Éditer mon site">
+      <svg class="ck-icon" aria-hidden="true"><use href="#i-pencil"/></svg><span class="ck-hide-sm">Éditer mon site</span>
+    </a>
+  </div>
+</header>

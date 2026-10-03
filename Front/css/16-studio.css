@@ -1,0 +1,610 @@
+/* ==========================================================================
+   Cockpit DS — 16 · Studio
+   Éditeur visuel des vitrines : omnibar, canevas, panneau de contenu,
+   dialogues de publication. Chargée par la seule page /studio.
+   © 2026 29th studio
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Studio : canevas, panneau de contenu, publication
+   -------------------------------------------------------------------------- */
+.ck-studio__body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.ck-studio__body > .ck-canvas {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.ck-studio__empty {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: var(--ck-space-32);
+}
+
+/* Sélecteur de page (omnibar) */
+.ck-studio__page-btn {
+  max-width: 260px;
+}
+
+.ck-studio__page-name {
+  overflow: hidden;
+  min-width: 0;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ck-studio__page-menu {
+  min-width: 280px;
+  max-width: 360px;
+}
+
+.ck-studio__menu-name {
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Compteur dans le bouton Publier */
+.ck-studio__save-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-right: calc(var(--ck-space-4) * -1);
+  padding: 0 var(--ck-space-4);
+  border-radius: var(--ck-radius-pill);
+  background: rgba(255, 255, 255, 0.22);
+  font-size: var(--ck-text-11);
+  font-variant-numeric: tabular-nums;
+}
+
+.ck-studio__save-count[hidden] {
+  display: none;
+}
+
+/* Surcouches du canevas : bandeau, voile de redémarrage, astuce, publication */
+.ck-studio__banner {
+  position: absolute;
+  top: var(--ck-space-12);
+  left: 50%;
+  z-index: 3;
+  width: min(720px, calc(100% - var(--ck-space-32)));
+  transform: translateX(-50%);
+  animation: ck-rise var(--ck-dur-3) var(--ck-ease-out) both;
+}
+
+.ck-studio__banner[hidden],
+.ck-studio__veil[hidden],
+.ck-studio__hint[hidden],
+.ck-studio__pending[hidden] {
+  display: none;
+}
+
+.ck-studio__banner .ck-alert {
+  box-shadow: var(--ck-shadow-lg);
+}
+
+.ck-studio__veil {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ck-space-6);
+  background: rgba(249, 250, 252, 0.82);
+  backdrop-filter: blur(3px);
+  text-align: center;
+  animation: ck-fade var(--ck-dur-3) var(--ck-ease-out) both;
+}
+
+.ck-studio__veil .ck-spinner {
+  margin-bottom: var(--ck-space-6);
+}
+
+.ck-studio__hint {
+  position: absolute;
+  bottom: var(--ck-space-16);
+  left: var(--ck-space-16);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-8);
+  max-width: calc(100% - var(--ck-space-32));
+  padding: var(--ck-space-4) var(--ck-space-4) var(--ck-space-4) var(--ck-space-12);
+  border-radius: var(--ck-radius-pill);
+  background: var(--ck-ink-1);
+  color: rgba(255, 255, 255, 0.82);
+  box-shadow: var(--ck-shadow-lg);
+  font-size: var(--ck-text-12);
+  animation: ck-rise var(--ck-dur-4) var(--ck-ease-out) 600ms both;
+}
+
+.ck-studio__hint strong {
+  color: var(--ck-white);
+  font-weight: var(--ck-weight-semibold);
+}
+
+.ck-studio__hint > .ck-icon {
+  flex-shrink: 0;
+  color: var(--ck-accent-300);
+}
+
+.ck-studio__hint .ck-btn {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.ck-studio__hint .ck-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--ck-white);
+}
+
+.ck-studio__pending {
+  position: absolute;
+  right: var(--ck-space-16);
+  bottom: var(--ck-space-16);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-8);
+  padding: var(--ck-space-6) var(--ck-space-6) var(--ck-space-6) var(--ck-space-12);
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-pill);
+  background: var(--ck-surface);
+  box-shadow: var(--ck-shadow-lg);
+  font-size: var(--ck-text-12);
+  font-weight: var(--ck-weight-medium);
+  animation: ck-rise var(--ck-dur-3) var(--ck-ease-out) both;
+}
+
+.ck-studio__pending-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--ck-radius-pill);
+  background: var(--ck-accent);
+  box-shadow: 0 0 0 3px var(--ck-accent-soft);
+}
+
+.ck-studio__pending[data-tone="warn"] {
+  border-color: var(--ck-warn-line);
+}
+
+.ck-studio__pending[data-tone="warn"] .ck-studio__pending-dot {
+  background: var(--ck-warn);
+  box-shadow: 0 0 0 3px var(--ck-warn-soft);
+}
+
+/* Panneau de contenu */
+.ck-studio__panel {
+  display: flex;
+  flex-direction: column;
+  width: 380px;
+  flex-shrink: 0;
+  min-height: 0;
+  border-left: var(--ck-border);
+  background: var(--ck-surface);
+}
+
+.ck-studio__panel[hidden] {
+  display: none;
+}
+
+.ck-studio__panel-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-10);
+  padding: var(--ck-space-12) var(--ck-inset);
+  border-bottom: var(--ck-border-soft);
+}
+
+.ck-studio__filter {
+  display: flex;
+}
+
+.ck-studio__filter .ck-segmented__item {
+  flex: 1;
+  justify-content: center;
+}
+
+.ck-studio__items {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.ck-studio__panel-empty {
+  padding: var(--ck-space-24) var(--ck-inset);
+}
+
+.ck-studio__group-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--ck-space-2) var(--ck-space-8);
+  padding: var(--ck-space-10) var(--ck-inset) var(--ck-space-6);
+  border-bottom: var(--ck-border-soft);
+  background: var(--ck-surface-2);
+}
+
+.ck-studio__group-title {
+  color: var(--ck-ink-1);
+  font-size: var(--ck-text-11);
+  font-weight: var(--ck-weight-semibold);
+  letter-spacing: var(--ck-tracking-overline);
+  text-transform: uppercase;
+}
+
+.ck-studio__group-hint {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-11);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ck-studio__group-head .ck-btn {
+  margin: calc(var(--ck-space-4) * -1) calc(var(--ck-space-6) * -1) calc(var(--ck-space-4) * -1) 0;
+}
+
+.ck-studio__group--detached > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.ck-studio__group--detached > summary::-webkit-details-marker {
+  display: none;
+}
+
+.ck-studio__group--detached .ck-studio__group-hint {
+  white-space: normal;
+}
+
+.ck-studio__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-6);
+  padding: var(--ck-space-10) var(--ck-inset) var(--ck-space-12);
+  border-bottom: var(--ck-border-soft);
+  transition: background-color var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-studio__item::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: transparent;
+  transition: background-color var(--ck-dur-2) var(--ck-ease-out);
+}
+
+.ck-studio__item.is-dirty::before {
+  background: var(--ck-accent);
+}
+
+.ck-studio__item.is-problem::before {
+  background: var(--ck-warn);
+}
+
+.ck-studio__item.is-selected {
+  background: var(--ck-accent-soft);
+}
+
+.ck-studio__item.is-detached {
+  background: var(--ck-surface-2);
+}
+
+.ck-studio__item-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ck-space-8);
+  min-height: 24px;
+}
+
+.ck-studio__item-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ck-space-4) var(--ck-space-6);
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.ck-studio__label {
+  color: var(--ck-ink-1);
+  font-size: var(--ck-text-12);
+  font-weight: var(--ck-weight-semibold);
+}
+
+.ck-studio__type {
+  height: 18px;
+  color: var(--ck-ink-3);
+  font-size: 10px;
+}
+
+.ck-studio__actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--ck-space-2);
+  opacity: 0.55;
+  transition: opacity var(--ck-dur-1) var(--ck-ease-out);
+}
+
+.ck-studio__item:hover .ck-studio__actions,
+.ck-studio__item:focus-within .ck-studio__actions,
+.ck-studio__item.is-selected .ck-studio__actions {
+  opacity: 1;
+}
+
+.ck-studio__field.ck-textarea {
+  min-height: 34px;
+  padding: var(--ck-space-6) var(--ck-space-8);
+  font-size: var(--ck-text-13);
+  line-height: 1.45;
+  resize: none;
+  overflow-y: auto;
+}
+
+.ck-studio__image {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-10);
+}
+
+.ck-studio__thumb {
+  width: 96px;
+  height: 64px;
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-sm);
+  object-fit: cover;
+  background: var(--ck-surface-2);
+}
+
+.ck-studio__detached {
+  margin: 0;
+  padding: var(--ck-space-6) var(--ck-space-10);
+  border-left: 2px solid var(--ck-line-strong);
+  color: var(--ck-ink-2);
+  font-size: var(--ck-text-12);
+  white-space: pre-wrap;
+}
+
+.ck-studio__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--ck-space-8);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-11);
+}
+
+.ck-studio__counter {
+  flex-shrink: 0;
+  font-family: var(--ck-font-mono);
+  font-stretch: var(--ck-mono-stretch);
+  font-variant-numeric: tabular-nums;
+}
+
+.ck-studio__counter[data-over="true"] {
+  color: var(--ck-warn-ink);
+  font-weight: var(--ck-weight-semibold);
+}
+
+/* Alerte de ligne (conflit, refus) : actions sous le texte dans le panneau étroit */
+.ck-studio__item .ck-alert {
+  flex-wrap: wrap;
+}
+
+.ck-studio__item .ck-alert__body {
+  flex: 1 1 0;
+}
+
+.ck-studio__item .ck-alert__actions {
+  flex-basis: 100%;
+  justify-content: flex-start;
+  padding-left: calc(14px + var(--ck-space-8));
+}
+
+.ck-studio__item .ck-alert__text {
+  overflow-wrap: anywhere;
+}
+
+.ck-studio__more {
+  display: flex;
+  justify-content: center;
+  padding: var(--ck-space-16);
+}
+
+/* Dialogue image */
+.ck-studio__preview-wrap {
+  display: grid;
+  place-items: center;
+  min-height: 140px;
+  padding: var(--ck-space-12);
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-md);
+  background-color: var(--ck-surface-2);
+  background-image:
+    linear-gradient(45deg, var(--ck-surface-3) 25%, transparent 25%, transparent 75%, var(--ck-surface-3) 75%),
+    linear-gradient(45deg, var(--ck-surface-3) 25%, transparent 25%, transparent 75%, var(--ck-surface-3) 75%);
+  background-position: 0 0, 8px 8px;
+  background-size: 16px 16px;
+}
+
+.ck-studio__preview {
+  max-width: 100%;
+  max-height: 220px;
+  border-radius: var(--ck-radius-sm);
+  object-fit: contain;
+}
+
+.ck-studio__drop {
+  cursor: pointer;
+}
+
+/* Revue avant publication */
+.ck-studio__review {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-12);
+}
+
+.ck-studio__review-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-8);
+  padding-bottom: var(--ck-space-12);
+  border-bottom: var(--ck-border-soft);
+}
+
+.ck-studio__review-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.ck-studio__diff {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ck-space-8);
+}
+
+.ck-studio__diff-before,
+.ck-studio__diff-after {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-4);
+  min-width: 0;
+  padding: var(--ck-space-8) var(--ck-space-10);
+  border-radius: var(--ck-radius-sm);
+  font-size: var(--ck-text-12);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.ck-studio__diff-before {
+  background: var(--ck-danger-soft);
+  color: var(--ck-danger-ink);
+}
+
+.ck-studio__diff-before > span:last-child {
+  text-decoration: line-through;
+  text-decoration-color: rgba(176, 31, 31, 0.45);
+}
+
+.ck-studio__diff-after {
+  background: var(--ck-good-soft);
+  color: var(--ck-good-ink);
+}
+
+.ck-studio__diff-thumb {
+  max-width: 100%;
+  max-height: 96px;
+  border-radius: var(--ck-radius-xs);
+  object-fit: contain;
+}
+
+/* Raccourcis clavier */
+.ck-studio__shortcuts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--ck-space-10) var(--ck-space-16);
+  align-items: center;
+  margin: 0;
+  font-size: var(--ck-text-13);
+}
+
+.ck-studio__shortcuts dt {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-4);
+  color: var(--ck-ink-3);
+  white-space: nowrap;
+}
+
+.ck-studio__shortcuts dd {
+  margin: 0;
+  color: var(--ck-ink-2);
+}
+
+@media (max-width: 1100px) {
+  .ck-studio__panel {
+    position: absolute;
+    inset: 0 0 0 auto;
+    z-index: 5;
+    width: min(380px, 92vw);
+    box-shadow: var(--ck-shadow-xl);
+  }
+
+  .ck-omnibar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .ck-omnibar__center {
+    display: none;
+  }
+}
+
+/* Omnibar étroite : actions secondaires réduites à leur icône (nom accessible conservé),
+   titre tronqué proprement au lieu d'être recouvert. */
+.ck-studio .ck-omnibar__start {
+  overflow: hidden;
+}
+
+.ck-studio .ck-omnibar__title {
+  overflow: hidden;
+}
+
+#studio-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 760px) {
+  .ck-studio .ck-omnibar {
+    gap: var(--ck-space-8);
+    padding: 0 var(--ck-space-8);
+  }
+
+  #studio-back > span,
+  .ck-studio .ck-omnibar__title > .ck-tag,
+  .ck-studio .ck-omnibar__sep,
+  #btn-panel > span,
+  #btn-reload,
+  #btn-open {
+    display: none;
+  }
+
+  #studio-mode .ck-segmented__item {
+    gap: 0;
+    font-size: 0;
+  }
+
+  .ck-studio__hint {
+    right: var(--ck-space-16);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ck-studio__hint,
+  .ck-studio__pending,
+  .ck-studio__banner,
+  .ck-studio__veil {
+    animation: none;
+  }
+}

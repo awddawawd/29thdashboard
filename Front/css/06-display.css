@@ -1,0 +1,718 @@
+/* ==========================================================================
+   Cockpit DS — 06 · Affichage
+   Badges, étiquettes, compteurs, présence, cartes, indicateurs, mesures,
+   progression (états vides & chargement : 08-feedback). Ton unifié via
+   data-tone="neutral|accent|info|good|warn|danger".
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Badge (statut) — toujours un libellé, la couleur n'est jamais seule
+   -------------------------------------------------------------------------- */
+.ck-badge {
+  --b-bg: var(--ck-surface-3);
+  --b-fg: var(--ck-ink-2);
+  --b-bd: var(--ck-line);
+  --b-dot: var(--ck-ink-4);
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ck-space-6);
+  height: 20px;
+  padding: 0 var(--ck-space-8);
+  border: 1px solid var(--b-bd);
+  border-radius: var(--ck-radius-pill);
+  background: var(--b-bg);
+  color: var(--b-fg);
+  font-size: var(--ck-text-11);
+  line-height: 1;
+  font-weight: var(--ck-weight-semibold);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.ck-badge__dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--b-dot);
+}
+
+.ck-badge .ck-icon {
+  width: 12px;
+  height: 12px;
+  margin: 0 -2px;
+}
+
+[data-tone="accent"].ck-badge,
+[data-tone="info"].ck-badge {
+  --b-bg: var(--ck-info-soft);
+  --b-fg: var(--ck-info-ink);
+  --b-bd: var(--ck-info-line);
+  --b-dot: var(--ck-info);
+}
+
+[data-tone="good"].ck-badge {
+  --b-bg: var(--ck-good-soft);
+  --b-fg: var(--ck-good-ink);
+  --b-bd: var(--ck-good-line);
+  --b-dot: var(--ck-good);
+}
+
+[data-tone="warn"].ck-badge {
+  --b-bg: var(--ck-warn-soft);
+  --b-fg: var(--ck-warn-ink);
+  --b-bd: var(--ck-warn-line);
+  --b-dot: var(--ck-warn);
+}
+
+[data-tone="danger"].ck-badge {
+  --b-bg: var(--ck-danger-soft);
+  --b-fg: var(--ck-danger-ink);
+  --b-bd: var(--ck-danger-line);
+  --b-dot: var(--ck-danger);
+}
+
+/* État transitoire (démarrage, rebuild, arrêt…) */
+.ck-badge--spin .ck-badge__dot {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid var(--b-fg);
+  border-right-color: transparent;
+  background: transparent;
+  animation: ck-spin 0.8s linear infinite;
+}
+
+.ck-badge--sm {
+  height: 18px;
+  padding: 0 var(--ck-space-6);
+  gap: var(--ck-space-4);
+}
+
+/* Étiquette (formule, driver, taille de widget…) */
+.ck-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ck-space-4);
+  height: 20px;
+  padding: 0 var(--ck-space-6);
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-xs);
+  background: var(--ck-surface-2);
+  color: var(--ck-ink-2);
+  font-size: var(--ck-text-11);
+  line-height: 1;
+  font-weight: var(--ck-weight-medium);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.ck-tag--mono {
+  font-family: var(--ck-font-mono);
+  font-stretch: var(--ck-mono-stretch);
+  font-size: 10.5px;
+  letter-spacing: 0;
+}
+
+[data-tone="accent"].ck-tag {
+  border-color: var(--ck-accent-line);
+  background: var(--ck-accent-soft);
+  color: var(--ck-accent-ink);
+}
+
+/* Compteur (navigation, onglets) */
+.ck-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--ck-radius-pill);
+  background: var(--ck-surface-3);
+  color: var(--ck-ink-2);
+  font-size: var(--ck-text-11);
+  line-height: 1;
+  font-weight: var(--ck-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+[data-tone="accent"].ck-count {
+  background: var(--ck-accent);
+  color: var(--ck-on-accent);
+}
+
+/* Pastille de statut */
+.ck-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--ck-ink-4);
+}
+
+[data-tone="good"].ck-dot { background: var(--ck-good); }
+[data-tone="warn"].ck-dot { background: var(--ck-warn); }
+[data-tone="danger"].ck-dot { background: var(--ck-danger); }
+[data-tone="accent"].ck-dot,
+[data-tone="info"].ck-dot { background: var(--ck-accent); }
+
+/* Présence en direct */
+.ck-live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ck-space-6);
+  height: var(--ck-h-xs);
+  padding: 0 var(--ck-space-10);
+  border: 1px solid var(--ck-good-line);
+  border-radius: var(--ck-radius-pill);
+  background: var(--ck-good-soft);
+  color: var(--ck-good-ink);
+  font-size: var(--ck-text-12);
+  line-height: 1;
+  font-weight: var(--ck-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ck-live__dot {
+  position: relative;
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--ck-good);
+}
+
+.ck-live__dot::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border: 1.5px solid var(--ck-good);
+  border-radius: 50%;
+  opacity: 0;
+  animation: ck-ping 2.2s var(--ck-ease-out) infinite;
+}
+
+.ck-live.is-idle {
+  border-color: var(--ck-line);
+  background: var(--ck-surface-2);
+  color: var(--ck-ink-3);
+}
+
+.ck-live.is-idle .ck-live__dot {
+  background: var(--ck-ink-4);
+}
+
+.ck-live.is-idle .ck-live__dot::after {
+  display: none;
+}
+
+.ck-live--sm {
+  height: 20px;
+  padding: 0 var(--ck-space-8);
+  font-size: var(--ck-text-11);
+}
+
+/* Avatar (initiales) */
+.ck-avatar {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--ck-accent-100);
+  color: var(--ck-accent-800);
+  font-size: var(--ck-text-11);
+  line-height: 1;
+  font-weight: var(--ck-weight-bold);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.ck-avatar--sm { width: 24px; height: 24px; font-size: 10px; }
+.ck-avatar--lg { width: 36px; height: 36px; font-size: var(--ck-text-13); }
+.ck-avatar--square { border-radius: var(--ck-radius-sm); }
+[data-tone="neutral"].ck-avatar { background: var(--ck-surface-3); color: var(--ck-ink-2); }
+
+/* --------------------------------------------------------------------------
+   Carte — anatomie unique partagée par les pages admin ET les widgets
+   -------------------------------------------------------------------------- */
+.ck-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-md);
+  background: var(--ck-surface);
+  box-shadow: var(--ck-shadow-xs);
+  overflow: hidden;
+}
+
+.ck-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ck-space-12);
+  flex-shrink: 0;
+  min-height: 52px;
+  padding: var(--ck-space-12) var(--ck-inset);
+  border-bottom: var(--ck-border-soft);
+}
+
+.ck-card__header--plain {
+  min-height: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.ck-card__heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-2);
+  min-width: 0;
+}
+
+.ck-card__title {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-8);
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--ck-text-14);
+  line-height: 20px;
+  font-weight: var(--ck-weight-semibold);
+  letter-spacing: var(--ck-tracking-title);
+  color: var(--ck-ink-1);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ck-card__subtitle {
+  overflow: hidden;
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+  color: var(--ck-ink-3);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ck-card__actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--ck-gap-sm);
+}
+
+.ck-card__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--ck-inset);
+}
+
+.ck-card__body--flush {
+  padding: 0;
+}
+
+.ck-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ck-gap-sm);
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: var(--ck-space-8) var(--ck-inset);
+  border-top: var(--ck-border-soft);
+  background: var(--ck-surface-2);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-12);
+}
+
+.ck-card--interactive {
+  cursor: pointer;
+  transition:
+    border-color var(--ck-dur-2) var(--ck-ease-out),
+    box-shadow var(--ck-dur-2) var(--ck-ease-out),
+    transform var(--ck-dur-2) var(--ck-ease-out);
+}
+
+.ck-card--interactive:hover {
+  border-color: var(--ck-line-strong);
+  box-shadow: var(--ck-shadow-md);
+  transform: translateY(-1px);
+}
+
+.ck-card--sunken {
+  background: var(--ck-surface-2);
+  box-shadow: none;
+}
+
+.ck-card--visible {
+  overflow: visible;
+}
+
+/* --------------------------------------------------------------------------
+   Indicateur (KPI) — libellé · valeur · écart · tendance
+   Standalone : <article class="ck-card ck-kpi"> · dans un widget : .ck-kpi seul
+   -------------------------------------------------------------------------- */
+.ck-kpi {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--ck-space-8);
+  min-width: 0;
+  padding: var(--ck-space-12) var(--ck-inset);
+}
+
+.ck-kpi__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ck-space-8);
+  min-width: 0;
+}
+
+.ck-kpi__label {
+  overflow: hidden;
+  font-size: var(--ck-text-11);
+  line-height: 16px;
+  font-weight: var(--ck-weight-semibold);
+  letter-spacing: var(--ck-tracking-overline);
+  text-transform: uppercase;
+  color: var(--ck-ink-3);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ck-kpi__icon {
+  width: var(--ck-icon-md);
+  height: var(--ck-icon-md);
+  color: var(--ck-ink-4);
+}
+
+[data-tone="accent"] > .ck-kpi__head .ck-kpi__icon,
+[data-tone="info"] > .ck-kpi__head .ck-kpi__icon { color: var(--ck-accent); }
+[data-tone="good"] > .ck-kpi__head .ck-kpi__icon { color: var(--ck-good); }
+[data-tone="warn"] > .ck-kpi__head .ck-kpi__icon { color: var(--ck-warn-ink); }
+[data-tone="danger"] > .ck-kpi__head .ck-kpi__icon { color: var(--ck-danger); }
+
+.ck-kpi__value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ck-space-4);
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--ck-text-figure);
+  line-height: var(--ck-leading-tight);
+  font-weight: var(--ck-weight-semibold);
+  font-stretch: var(--ck-figure-stretch);
+  letter-spacing: var(--ck-tracking-display);
+  color: var(--ck-ink-1);
+  white-space: nowrap;
+}
+
+.ck-kpi__unit {
+  font-size: 0.5em;
+  font-weight: var(--ck-weight-medium);
+  font-stretch: 100%;
+  letter-spacing: 0;
+  color: var(--ck-ink-3);
+}
+
+.ck-kpi__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-8);
+  min-width: 0;
+}
+
+.ck-kpi__meta {
+  overflow: hidden;
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+  color: var(--ck-ink-3);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ck-kpi__spark {
+  height: 28px;
+  min-width: 0;
+}
+
+.ck-kpi--hero .ck-kpi__value {
+  font-size: var(--ck-text-hero);
+  letter-spacing: -0.04em;
+}
+
+/* Écart signé — la couleur suit « est-ce bien ? », pas la direction */
+.ck-delta {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--ck-space-2);
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+  font-weight: var(--ck-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ck-delta .ck-icon {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2.25;
+}
+
+[data-tone="good"].ck-delta { color: var(--ck-good-ink); }
+[data-tone="danger"].ck-delta { color: var(--ck-danger-ink); }
+
+/* --------------------------------------------------------------------------
+   Mesures (conteneur VPS : statut, port, RAM, disque, CPU, uptime)
+   -------------------------------------------------------------------------- */
+.ck-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(112px, 100%), 1fr));
+  row-gap: var(--ck-space-16);
+}
+
+.ck-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-4);
+  min-width: 0;
+  padding: 0 var(--ck-inset);
+  border-left: var(--ck-border-soft);
+}
+
+.ck-stat:first-child {
+  border-left: 0;
+}
+
+.ck-stat__label {
+  font-size: var(--ck-text-11);
+  line-height: 16px;
+  font-weight: var(--ck-weight-semibold);
+  letter-spacing: var(--ck-tracking-overline);
+  text-transform: uppercase;
+  color: var(--ck-ink-3);
+  white-space: nowrap;
+}
+
+.ck-stat__value {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-6);
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--ck-text-14);
+  line-height: 20px;
+  font-weight: var(--ck-weight-semibold);
+  color: var(--ck-ink-1);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ck-stat__value.ck-mono {
+  font-size: var(--ck-text-13);
+}
+
+/* Liste de définitions (fiche client, domaine) */
+.ck-dl {
+  display: grid;
+  grid-template-columns: minmax(96px, max-content) minmax(0, 1fr);
+  column-gap: var(--ck-space-16);
+}
+
+.ck-dl dt,
+.ck-dl dd {
+  padding: var(--ck-space-8) 0;
+  border-bottom: var(--ck-border-soft);
+}
+
+.ck-dl dt {
+  font-size: var(--ck-text-12);
+  line-height: 20px;
+  color: var(--ck-ink-3);
+}
+
+.ck-dl dd {
+  min-width: 0;
+  font-size: var(--ck-text-13);
+  line-height: 20px;
+  color: var(--ck-ink-1);
+  overflow-wrap: anywhere;
+}
+
+.ck-dl dt:last-of-type,
+.ck-dl dd:last-of-type {
+  border-bottom: 0;
+}
+
+/* Avantage / garantie */
+.ck-feature {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--ck-space-12);
+}
+
+.ck-feature__icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ck-radius-sm);
+  background: var(--ck-accent-soft);
+  color: var(--ck-accent);
+}
+
+[data-tone="good"] > .ck-feature__icon { background: var(--ck-good-soft); color: var(--ck-good-ink); }
+
+.ck-feature__title {
+  font-size: var(--ck-text-13);
+  line-height: 20px;
+  font-weight: var(--ck-weight-semibold);
+  color: var(--ck-ink-1);
+}
+
+.ck-feature__text {
+  font-size: var(--ck-text-12);
+  line-height: 18px;
+  color: var(--ck-ink-3);
+}
+
+/* Liste de contrôles (SEO, santé) */
+.ck-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-8);
+  list-style: none;
+}
+
+.ck-checklist__item {
+  display: flex;
+  align-items: center;
+  gap: var(--ck-space-8);
+  min-width: 0;
+  color: var(--ck-ink-1);
+  font-size: var(--ck-text-13);
+  line-height: 20px;
+}
+
+.ck-checklist__item > .ck-icon {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+  color: var(--ck-good);
+}
+
+.ck-checklist__item[data-state="warn"] > .ck-icon { color: var(--ck-warn-ink); }
+.ck-checklist__item[data-state="error"] > .ck-icon { color: var(--ck-danger); }
+
+.ck-checklist__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ck-checklist__meta {
+  flex-shrink: 0;
+  color: var(--ck-ink-3);
+  font-size: var(--ck-text-12);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
+   Progression — la piste est une teinte claire du même ton que la barre
+   -------------------------------------------------------------------------- */
+.ck-progress {
+  --p-color: var(--ck-accent);
+  position: relative;
+  width: 100%;
+  height: 6px;
+  border-radius: var(--ck-radius-pill);
+  background: color-mix(in srgb, var(--p-color) 15%, var(--ck-surface));
+  overflow: hidden;
+}
+
+.ck-progress__bar {
+  width: var(--v, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--p-color);
+  transition: width var(--ck-dur-4) var(--ck-ease-out);
+}
+
+[data-tone="good"].ck-progress { --p-color: var(--ck-good); }
+[data-tone="warn"].ck-progress { --p-color: var(--ck-warn); }
+[data-tone="danger"].ck-progress { --p-color: var(--ck-danger); }
+[data-tone="neutral"].ck-progress { --p-color: var(--ck-ink-3); }
+
+.ck-progress--sm { height: 4px; }
+.ck-progress--lg { height: 8px; }
+
+.ck-meter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ck-space-6);
+  min-width: 0;
+}
+
+.ck-meter__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ck-space-8);
+  font-size: var(--ck-text-12);
+  line-height: 16px;
+}
+
+.ck-meter__label {
+  overflow: hidden;
+  color: var(--ck-ink-2);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ck-meter__value {
+  flex-shrink: 0;
+  color: var(--ck-ink-1);
+  font-weight: var(--ck-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.ck-meter__value small {
+  font-size: inherit;
+  font-weight: var(--ck-weight-regular);
+  color: var(--ck-ink-3);
+}
+
+.ck-divider {
+  height: 1px;
+  margin: var(--ck-space-16) 0;
+  border: 0;
+  background: var(--ck-line-soft);
+}
+
+/* QR code */
+.ck-qr {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  padding: var(--ck-space-6);
+  border: var(--ck-border);
+  border-radius: var(--ck-radius-sm);
+  background: var(--ck-white);
+  box-shadow: var(--ck-shadow-xs);
+}
+
+.ck-qr svg {
+  width: var(--qr-size, 104px);
+  height: auto;
+}

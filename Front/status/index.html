@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <title>Statut des services · 29th studio</title>
+    <meta name="description" content="État en temps réel de la plateforme 29th studio : cockpit, base de données, hébergement des vitrines et disponibilité sur 90 jours.">
+    <!-- @include head.html -->
+  </head>
+  <body>
+    <!-- @include body-start.html brand="Statut des services" -->
+
+    <main class="ck-status-page" id="main" tabindex="-1">
+      <header class="ck-status-page__head">
+        <a href="/status" class="ck-brand">
+          <span class="ck-brand__mark"><svg class="ck-icon" aria-hidden="true"><use href="#i-layers"/></svg></span>
+          <span class="ck-brand__text">
+            <span class="ck-brand__title">29th studio</span>
+            <span class="ck-brand__sub">Statut des services</span>
+          </span>
+        </a>
+        <div class="ck-cluster">
+          <span class="ck-text-caption" id="status-updated"><span class="ck-skeleton" style="width: 96px"></span></span>
+          <a href="/login" class="ck-btn ck-btn--secondary ck-btn--sm">
+            <svg class="ck-icon" aria-hidden="true"><use href="#i-user"/></svg><span>Espace client</span>
+          </a>
+        </div>
+      </header>
+
+      <section class="ck-status-hero" id="status-hero" data-tone="neutral" aria-live="polite">
+        <svg class="ck-icon ck-status-hero__icon" aria-hidden="true" id="status-hero-icon"><use href="#i-activity"/></svg>
+        <div>
+          <h1 class="ck-status-hero__title" id="status-hero-title">Vérification en cours…</h1>
+          <p class="ck-status-hero__sub" id="status-hero-sub">Lecture des dernières sondes.</p>
+        </div>
+      </section>
+
+      <article class="ck-card">
+        <header class="ck-card__header">
+          <div class="ck-card__heading">
+            <h2 class="ck-card__title">Disponibilité de la plateforme</h2>
+            <p class="ck-card__subtitle">90 derniers jours · pire état constaté chaque jour</p>
+          </div>
+          <div class="ck-card__actions" id="status-sla">
+            <span class="ck-skeleton ck-skeleton--pill"></span>
+          </div>
+        </header>
+        <div class="ck-card__body" id="status-global">
+          <div class="ck-stack">
+            <!-- @include skeleton/bars.html -->
+            <!-- @include skeleton/legend.html -->
+          </div>
+        </div>
+      </article>
+
+      <article class="ck-card">
+        <header class="ck-card__header">
+          <div class="ck-card__heading">
+            <h2 class="ck-card__title">Services</h2>
+            <p class="ck-card__subtitle">Contrôlés automatiquement par nos serveurs, plusieurs fois par minute</p>
+          </div>
+        </header>
+        <div id="status-services">
+          <!-- @include skeleton/services.html -->
+        </div>
+      </article>
+
+      <footer class="ck-status-page__foot">
+        Designed &amp; built by Andi Ajruli — <a href="https://29th.studio" target="_blank" rel="noopener" class="ck-link ck-link--muted">29th studio</a> · © 2026
+      </footer>
+    </main>
+
+    <!-- @include scripts.html -->
+    <script>
+    (function () {
+      'use strict';
+      const { h, fmt } = UI;
+      const $ = (id) => document.getElementById(id);
+      const HERO = {
+        operational: ['good', 'check-circle', 'Tous les systèmes sont opérationnels', 'Aucun incident en cours.'],
+        degraded: ['warn', 'alert-triangle', 'Performances dégradées', 'Une partie des services répond plus lentement ou de façon incomplète. Nos équipes sont alertées.'],
+        outage: ['danger', 'alert-circle', 'Incident en cours', 'Un service critique est indisponible. Nos équipes interviennent.'],
+        unknown: ['neutral', 'activity', 'Statut en cours de mesure', 'Les premières sondes n\'ont pas encore été exécutées.']
+      };
+
+      function render(d) {
+        const [tone, icon, title, sub] = HERO[d.status] || HERO.unknown;
+        const hero = $('status-hero');
+        hero.dataset.tone = tone;
+        $('status-hero-icon').querySelector('use').setAttribute('href', `#i-${icon}`);
+        $('status-hero-title').textContent = title;
+        $('status-hero-sub').textContent = sub;
+        $('status-updated').textContent = d.updated_at ? `Mis à jour ${fmt.relative(d.updated_at)}` : 'En attente de mesure';
+
+        UI.replace($('status-sla'), UI.tag(d.uptime != null ? `${fmt.percent(d.uptime, 3)}` : 'Mesure en cours', { mono: true, tone: 'good' }));
+        const bars = h('div');
+        Cockpit.charts.uptime(bars, d.series || [], { ariaLabel: 'Disponibilité de la plateforme sur 90 jours' });
+        UI.replace($('status-global'), h('div', null, bars, Views.uptimeLegend()));
+
+        UI.replace($('status-services'), d.services.map((s) => {
+          const serviceBars = h('div');
+          Cockpit.charts.uptime(serviceBars, s.series || [], { axis: false, height: 22, ariaLabel: `${s.label} : 90 jours` });
+          return h('div', { class: 'ck-status-service' },
+            h('div', { class: 'ck-spread' },
+              h('div', { class: 'ck-cluster' }, h('strong', { class: 'ck-text-strong' }, s.label), s.detail ? h('span', { class: 'ck-text-caption' }, s.detail) : null),
+              h('div', { class: 'ck-cluster' },
+                h('span', { class: 'ck-text-caption ck-mono' }, s.uptime != null ? fmt.percent(s.uptime, 2) : '—'),
+                UI.statusBadge(s.state === 'none' ? 'none' : s.state))),
+            serviceBars);
+        }));
+      }
+
+      async function load() {
+        render(await App.api('/api/status'));
+      }
+
+      App.boot(async ({ status }) => {
+        status('Lecture des sondes…');
+        await load();
+      }).then(() => App.poll(() => load().catch(() => {}), 30000));
+    })();
+    </script>
+  </body>
+</html>
