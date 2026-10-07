@@ -557,6 +557,7 @@ def test_relay_gate() -> None:
 class _StubSource(http.server.BaseHTTPRequestHandler):
     responses: list[tuple[int, bytes]] = []
     calls: list[tuple[Optional[str], Optional[str]]] = []
+    user_agents: list[Optional[str]] = []
 
     def log_message(self, *args: object) -> None:
         return
@@ -564,6 +565,7 @@ class _StubSource(http.server.BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         cls = type(self)
         cls.calls.append((self.headers.get("X-WAAS-Sync-Token"), self.headers.get("X-WAAS-Source-Nonce")))
+        cls.user_agents.append(self.headers.get("User-Agent"))
         code, body = cls.responses.pop(0) if len(cls.responses) > 1 else cls.responses[0]
         self.send_response(code)
         self.send_header("Content-Type", "application/gzip" if code == 200 else "application/json")
@@ -602,6 +604,7 @@ def test_fetcher_contract() -> None:
 
         def run(responses: list[tuple[int, bytes]], attempts: int = 3) -> tuple[Any, pathlib.Path, pathlib.Path]:
             _StubSource.responses, _StubSource.calls = list(responses), []
+            _StubSource.user_agents = []
             sleeps.clear()
             sandbox = pathlib.Path(tempfile.mkdtemp())
             destination = sandbox / "src" / "site"
@@ -616,6 +619,10 @@ def test_fetcher_contract() -> None:
               all((destination / name).is_file() for name in SITE_FILES),
               str(sorted(p.name for p in destination.rglob("*"))))
         check("jeton et clé du conteneur présentés", _StubSource.calls == [(token, NONCE)], str(_StubSource.calls))
+        check("en-tête User-Agent personnalisé (anti-blocage Cloudflare WAF)",
+              _StubSource.user_agents and all("Python-urllib" not in str(ua) and "WaaS-FetchSource" in str(ua)
+                                              for ua in _StubSource.user_agents),
+              str(_StubSource.user_agents))
 
         hostile = github_archive({"index.html": b"<h1>ok</h1>"}, extra=_malicious_members())
         result, sandbox, destination = run([(200, hostile)])

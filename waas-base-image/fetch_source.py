@@ -44,6 +44,7 @@ RETRYABLE_ERRORS = (OSError, http.client.HTTPException, tarfile.TarError, EOFErr
 #: Premières versions corrigeant les contournements du filtre « data »
 #: (CVE-2025-4517, CVE-2025-4330, CVE-2025-4138…) ; 3.14 et suivantes le sont toutes.
 SAFE_TARFILE_PATCH = {(3, 11): 13, (3, 12): 11, (3, 13): 4}
+USER_AGENT = os.getenv("WAAS_USER_AGENT", "Mozilla/5.0 (compatible; WaaS-FetchSource/2.0)")
 
 
 class FetchError(Exception):
@@ -116,6 +117,7 @@ def _download(api_base: str, token: str, nonce: str, destination: Path) -> Optio
     request.add_header(SYNC_TOKEN_HEADER, token)
     request.add_header(SOURCE_NONCE_HEADER, nonce)
     request.add_header("Accept", "application/gzip")
+    request.add_header("User-Agent", USER_AGENT)
     with urllib.request.urlopen(request, timeout=SOURCE_TIMEOUT) as response:
         return extract_archive(response, destination)
 
@@ -131,11 +133,14 @@ def fetch_source(destination: Path, api_base: str, token: str, nonce: str,
                  attempts: int = SOURCE_ATTEMPTS) -> Optional[str]:
     """Télécharge et extrait le dépôt dans ``destination`` (vidée à chaque essai)."""
     last_error = ""
+    fallback_api = os.getenv("API_LOCAL_FALLBACK", "http://host.docker.internal:8000")
+    current_api = api_base
+
     for attempt in range(1, attempts + 1):
         shutil.rmtree(destination, ignore_errors=True)
         destination.mkdir(parents=True)
         try:
-            return _download(api_base, token, nonce, destination)
+            return _download(current_api, token, nonce, destination)
         except urllib.error.HTTPError as exc:
             detail = _error_detail(exc)
             if exc.code in FATAL_STATUSES:
@@ -143,6 +148,13 @@ def fetch_source(destination: Path, api_base: str, token: str, nonce: str,
             last_error = f"HTTP {exc.code} : {detail}"
         except RETRYABLE_ERRORS as exc:     # FetchError (définitif) n'en fait pas partie
             last_error = f"{type(exc).__name__} : {exc}"
+            if current_api != fallback_api and ("Name does not resolve" in str(exc) or "nodename nor servname" in str(exc) or "Connection refused" in str(exc)):
+                log(f"Résolution ou accès impossible sur '{current_api}' ({last_error}) — bascule sur le relais local '{fallback_api}'")
+                current_api = fallback_api
+                try:
+                    return _download(current_api, token, nonce, destination)
+                except Exception as fb_exc:
+                    last_error = f"{type(fb_exc).__name__} : {fb_exc}"
         if attempt < attempts:
             delay = min(3 * 2 ** (attempt - 1), 30)
             log(f"Tentative {attempt}/{attempts} échouée ({last_error}) — nouvel essai dans {delay}s")

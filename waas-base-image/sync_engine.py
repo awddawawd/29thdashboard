@@ -72,6 +72,7 @@ MAX_INVENTORY_SLOTS = 5000
 MAX_RESPONSE_BYTES = 16 * 1024 * 1024
 ASSETS_DIR = "__waas"
 REHYDRATE_MARKER = "WAAS_REHYDRATE_OK"
+USER_AGENT = os.getenv("WAAS_USER_AGENT", "Mozilla/5.0 (compatible; WaaS-SyncEngine/2.0)")
 
 if not TENANT_ID or not SYNC_TOKEN:
     print(
@@ -121,14 +122,18 @@ def _api_call(
     Lève si l'API est injoignable : mieux vaut redémarrer le conteneur que servir
     un site non hydraté (le contenu personnalisé du client serait absent).
     """
-    url = f"{API_BASE_URL.rstrip('/')}{path}"
+    global API_BASE_URL
+    current_base = API_BASE_URL
+    fallback_base = os.getenv("API_LOCAL_FALLBACK", "http://host.docker.internal:8000")
     body = json.dumps(payload).encode("utf-8") if payload is not None else None
     last_error: Exception | None = None
 
     for attempt in range(1, attempts + 1):
+        url = f"{current_base.rstrip('/')}{path}"
         request = urllib.request.Request(url, data=body, method=method)
         request.add_header("X-WAAS-Sync-Token", SYNC_TOKEN)
         request.add_header("Accept", "application/json")
+        request.add_header("User-Agent", USER_AGENT)
         if body is not None:
             request.add_header("Content-Type", "application/json")
 
@@ -141,6 +146,26 @@ def _api_call(
             last_error = exc
         except Exception as exc:  # réseau, DNS, timeout, TLS…
             last_error = exc
+            if current_base != fallback_base and ("Name does not resolve" in str(exc) or "nodename nor servname" in str(exc) or "Connection refused" in str(exc)):
+                print(f"[SyncEngine - API] Résolution ou accès impossible sur '{current_base}' ({exc}) — bascule sur le relais local '{fallback_base}'")
+                current_base = fallback_base
+                API_BASE_URL = fallback_base
+                url_fb = f"{current_base.rstrip('/')}{path}"
+                req_fb = urllib.request.Request(url_fb, data=body, method=method)
+                req_fb.add_header("X-WAAS-Sync-Token", SYNC_TOKEN)
+                req_fb.add_header("Accept", "application/json")
+                req_fb.add_header("User-Agent", USER_AGENT)
+                if body is not None:
+                    req_fb.add_header("Content-Type", "application/json")
+                try:
+                    with urllib.request.urlopen(req_fb, timeout=timeout) as response:
+                        raw = response.read(MAX_RESPONSE_BYTES)
+                    return json.loads(raw.decode("utf-8") or "{}")
+                except urllib.error.HTTPError as fb_exc:
+                    _raise_if_final(fb_exc, method, path)
+                    last_error = fb_exc
+                except Exception as fb_exc:
+                    last_error = fb_exc
 
         if attempt < attempts:
             delay = min(3 * 2 ** (attempt - 1), 30)

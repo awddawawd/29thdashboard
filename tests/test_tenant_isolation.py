@@ -289,7 +289,8 @@ class _StubApi(http.server.BaseHTTPRequestHandler):
     def do_POST(self):  # noqa: N802
         length = int(self.headers.get("Content-Length") or 0)
         payload = json.loads(self.rfile.read(length) or b"{}")
-        type(self).calls.append(("POST", self.headers.get("X-WAAS-Sync-Token"), payload, self.path))
+        type(self).calls.append(("POST", self.headers.get("X-WAAS-Sync-Token"), payload, self.path,
+                                 self.headers.get("User-Agent")))
         if self.path != "/internal/sync/inventory":
             type(self)._respond(self, {"tenant_id": "boutique-a", "upserted": len(payload.get("records", []))})
             return
@@ -362,6 +363,9 @@ def test_sync_engine_contract() -> None:
             posts = [c for c in _StubApi.calls if c[0] == "POST"]
             check("échanges authentifiés par le jeton", posts and all(c[1] == token for c in _StubApi.calls),
                   str(posts[:1])[:160])
+            check("en-tête User-Agent personnalisé (anti-blocage Cloudflare WAF)",
+                  posts and all("Python-urllib" not in str(c[4]) and "WaaS-SyncEngine" in str(c[4]) for c in posts),
+                  str([c[4] for c in posts]))
             check("premier lancement : inventaire des éléments envoyé (protocole v2)",
                   bool(posts) and posts[0][3] == "/internal/sync/inventory"
                   and len(posts[0][2].get("slots", [])) >= 3, str(posts[:1])[:160])

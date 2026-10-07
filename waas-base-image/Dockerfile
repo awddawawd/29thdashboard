@@ -5,8 +5,8 @@ FROM python:3.11-alpine
 RUN apk add --no-cache git nginx \
  && addgroup -g 10001 -S waas \
  && adduser -u 10001 -S -G waas -h /home/waas waas \
- && mkdir -p /opt/scripts /var/www/html /tmp/nginx-server.d /home/waas \
- && chown -R 10001:10001 /opt/scripts /var/www/html /home/waas
+ && mkdir -p /opt/scripts /var/www/html /tmp/nginx-server.d /home/waas /var/lib/nginx/logs \
+ && chown -R 10001:10001 /opt/scripts /var/www/html /home/waas /var/lib/nginx
 RUN pip install --no-cache-dir lxml
 
 # Configuration nginx maîtrisée : tout ce qui est écrit va vers stdout/stderr ou /tmp,
@@ -51,4 +51,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
     CMD wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["nginx", "-e", "/dev/stderr", "-g", "daemon off;"]

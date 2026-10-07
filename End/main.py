@@ -35,6 +35,12 @@ import db
 import git_source
 import pages
 import sync_auth
+from domain_router import (
+    DomainRouterMiddleware,
+    clean_domain,
+    invalidate_port_cache,
+    normalize_base_domain,
+)
 from telemetry import (
     calculate_cpu_percent,
     describe_container,
@@ -126,7 +132,7 @@ def browser_api_url_setting() -> str:
 def is_production_mode(request: Request | None = None) -> bool:
     """Détermine si la plateforme est en production à partir de la configuration Supabase (passage de localhost à un nom de domaine)."""
     api_url = api_public_url_setting().lower()
-    base_domain = db.get_setting("client_base_domain", "").lower()
+    base_domain = clean_domain(db.get_setting("client_base_domain", ""))
 
     # Détection via la configuration Supabase (présence d'un nom de domaine hors localhost/127.0.0.1 ou protocole https)
     has_custom_domain = bool(base_domain and base_domain not in ("localhost", "127.0.0.1"))
@@ -138,8 +144,8 @@ def is_production_mode(request: Request | None = None) -> bool:
 
     # Détection dynamique sur la requête HTTP courante (nom d'hôte ou en-tête HTTPS/reverse-proxy)
     if request is not None:
-        host = (request.url.hostname or "").lower()
-        is_request_domain = bool(host and host not in ("localhost", "127.0.0.1"))
+        host = clean_domain(request.url.hostname or "")
+        is_request_domain = bool(host and host not in ("localhost", "127.0.0.1", "testserver"))
         is_request_https = request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"
         return is_request_domain or is_request_https
 
@@ -282,6 +288,16 @@ def verify_csrf_origin(request: Request) -> None:
         )
         if is_local:
             return
+
+        # Tolérance sous-domaines légitimes du plan de contrôle en production :
+        # app.<domaine> et api.<domaine> peuvent interagir en toute sécurité.
+        base_domain = clean_domain(db.get_setting("client_base_domain", ""))
+        if base_domain and base_domain not in ("localhost", "127.0.0.1"):
+            clean_source = clean_domain(source_name)
+            clean_target = clean_domain(host_name)
+            control_plane_hosts = {f"app.{base_domain}", f"api.{base_domain}", base_domain}
+            if clean_source in control_plane_hosts and clean_target in control_plane_hosts:
+                return
 
     log_masked_forbidden(
         request.url.path,
@@ -524,8 +540,9 @@ def build_site_url(host_port: int | str | None) -> str | None:
     """Construit l'URL publique du site selon le domaine configuré en DB."""
     if not host_port:
         return None
-    base_domain = db.get_setting("client_base_domain", "localhost")
-    return f"http://{base_domain}:{host_port}"
+    raw_domain = db.get_setting("client_base_domain", "localhost")
+    cleaned = clean_domain(raw_domain) or "localhost"
+    return f"http://{cleaned}:{host_port}"
 
 
 #: Ports internes du serveur web d'un conteneur locataire : ``8080`` pour les
@@ -652,6 +669,15 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+#: Routage automatique sous-domaines / vitrines en production
+app.add_middleware(
+    DomainRouterMiddleware,
+    get_db=lambda: db,
+    get_docker=lambda: docker_client,
+    is_prod_fn=is_production_mode,
+    docs_enabled=DOCS_ENABLED,
 )
 
 #: Suivi d'audience des vitrines : seules routes appelables depuis n'importe quelle origine.
@@ -1826,6 +1852,129 @@ def update_fleet_setting(payload: SettingUpdateRequest) -> dict[str, Any]:
     }
 
 
+class SwitchModeRequest(BaseModel):
+    mode: Literal["production", "local"] = Field(..., example="production")
+    base_domain: Optional[str] = Field(None, example="29th.site")
+    landing_site_slug: Optional[str] = Field(None, example="dwadaw")
+    rebuild_containers: bool = Field(False, description="Reconstruire les conteneurs locataires actifs")
+
+
+def _update_env_file(filepath: Path, updates: dict[str, str]) -> None:
+    """Met à jour un fichier .env de manière sûre et atomique."""
+    if not filepath.exists():
+        return
+    try:
+        content = filepath.read_text(encoding="utf-8")
+        lines = content.splitlines()
+        new_lines: list[str] = []
+        seen: set[str] = set()
+        for line in lines:
+            stripped = line.strip()
+            if stripped and not stripped.startswith("#") and "=" in stripped:
+                key = stripped.split("=", 1)[0].strip()
+                if key in updates:
+                    new_lines.append(f"{key}={updates[key]}")
+                    seen.add(key)
+                    continue
+            new_lines.append(line)
+        for k, v in updates.items():
+            if k not in seen:
+                new_lines.append(f"{k}={v}")
+        filepath.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+    except Exception as exc:
+        logger.warning("Échec de mise à jour du fichier d'environnement %s : %s", filepath, exc)
+
+
+@app.post("/admin/api/fleet/switch-mode", dependencies=[Depends(require_admin)], tags=["Fleet Admin"])
+def switch_platform_mode(payload: SwitchModeRequest) -> dict[str, Any]:
+    """Bascule la plateforme entre le mode Local et le mode Production en une seule action.
+
+    Met à jour simultanément :
+    - le domaine racine des vitrines (client_base_domain) ;
+    - l'URL d'API publique pour les conteneurs (api_public_url) ;
+    - l'URL d'API vue du navigateur pour l'audience et le Studio (browser_api_url) ;
+    - le site vitrine officiel servi sur l'apex (landing_site_slug) ;
+    - les fichiers de configuration système (/etc/waas/api.env et End/.env) ;
+    - et relance optionnellement la reconstruction des conteneurs actifs.
+    """
+    rebuilt_sites: list[str] = []
+    errors: list[str] = []
+
+    if payload.mode == "production":
+        raw_domain = payload.base_domain or db.get_setting("client_base_domain", "")
+        if not raw_domain:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Un nom de domaine racine est requis pour passer en mode production (ex. '29th.site').",
+            )
+        try:
+            base_domain = normalize_base_domain(raw_domain)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            ) from None
+
+        landing_slug = (payload.landing_site_slug if payload.landing_site_slug is not None else db.get_setting("landing_site_slug", "")) or ""
+        landing_slug = landing_slug.strip().lower()
+
+        db.set_setting("client_base_domain", base_domain)
+        # L'API pour les conteneurs locataires passe par le pont Docker hôte (ultra-rapide, zéro DNS, sans dépendre de Cloudflare WAF)
+        db.set_setting("api_public_url", "http://host.docker.internal:8000")
+        db.set_setting("browser_api_url", f"https://api.{base_domain}")
+        if landing_slug:
+            db.set_setting("landing_site_slug", landing_slug)
+
+        env_updates = {
+            "CLIENT_BASE_DOMAIN": base_domain,
+            "API_PUBLIC_URL": "http://host.docker.internal:8000",
+            "BROWSER_API_URL": f"https://api.{base_domain}",
+        }
+    else:
+        # Mode Local
+        base_domain = "localhost"
+        db.set_setting("client_base_domain", "localhost")
+        db.set_setting("api_public_url", "http://172.17.0.1:8000")
+        db.set_setting("browser_api_url", "http://localhost:8000")
+        db.set_setting("landing_site_slug", "")
+
+        env_updates = {
+            "CLIENT_BASE_DOMAIN": "localhost",
+            "API_PUBLIC_URL": "http://172.17.0.1:8000",
+            "BROWSER_API_URL": "http://localhost:8000",
+        }
+
+    # Mise à jour des fichiers d'environnement locaux
+    for env_path in (Path("/etc/waas/api.env"), Path(__file__).resolve().parent / ".env"):
+        _update_env_file(env_path, env_updates)
+
+    _invalidate_cache()
+    invalidate_port_cache()
+    db.reload_settings_cache()
+
+    if payload.rebuild_containers and docker_client:
+        try:
+            containers = docker_client.containers.list(all=False, filters={"label": "service=waas-tenant"})
+            for c in containers:
+                s_id = (c.labels or {}).get("tenant_id")
+                if s_id:
+                    try:
+                        rebuild_site(s_id)
+                        rebuilt_sites.append(s_id)
+                    except Exception as exc:
+                        errors.append(f"{s_id}: {exc}")
+        except Exception as exc:
+            errors.append(f"Erreur d'inventaire Docker : {exc}")
+
+    return {
+        "status": "success",
+        "mode": payload.mode,
+        "environment": environment_info(),
+        "rebuilt": rebuilt_sites,
+        "errors": errors if errors else None,
+    }
+
+
 # ---------------------------------------------------------
 # 3.1 CACHE COURT DES LECTURES PARTAGÉES PAR UNE MÊME PAGE
 # ---------------------------------------------------------
@@ -1871,10 +2020,35 @@ def all_clients() -> list[dict[str, Any]]:
 
 
 def site_public_url(record: Optional[dict[str, Any]], port: Optional[str]) -> Optional[str]:
-    """URL publique : domaine de la fiche en production, sinon hôte:port configuré."""
+    """URL publique : domaine racine/sous-domaine en production, sinon hôte:port configuré."""
+    base_domain = clean_domain(db.get_setting("client_base_domain", ""))
+    is_prod = is_production_mode() and bool(base_domain and base_domain not in ("localhost", "127.0.0.1"))
+
+    if is_prod:
+        site_id = str((record or {}).get("site_id") or (record or {}).get("id") or "").strip()
+        domain = str((record or {}).get("domain") or "").strip()
+        landing_slug = (db.get_setting("landing_site_slug", "") or "").strip().lower()
+
+        # 1. Site vitrine officiel configuré sur l'apex (ex. 29th.site)
+        if landing_slug and site_id.lower() == landing_slug:
+            return f"https://{base_domain}"
+        if domain and clean_domain(domain) in (base_domain, f"www.{base_domain}"):
+            return f"https://{base_domain}"
+
+        # 2. Domaine personnalisé explicite propre au client (ex. https://boutique-client.com)
+        if domain:
+            cleaned_d = clean_domain(domain)
+            if cleaned_d not in (base_domain, f"www.{base_domain}", f"{site_id}.{base_domain}"):
+                return domain if "://" in domain else f"https://{cleaned_d}"
+
+        # 3. Sous-domaine locataire standard (ex. https://dwadaw.29th.site)
+        if site_id:
+            return f"https://{site_id}.{base_domain}"
+
     domain = str((record or {}).get("domain") or "").strip()
     if domain and is_production_mode():
         return domain if "://" in domain else f"https://{domain}"
+
     return build_site_url(port)
 
 
@@ -2142,6 +2316,7 @@ def build_tenant_environment(tenant_id: str, repo_url: str, api_url: str) -> dic
         "REPO_URL": repo_url,
         "SOURCE_MODE": mode,
         "API_BASE_URL": api_url,
+        "API_LOCAL_FALLBACK": "http://host.docker.internal:8000",
         "SYNC_TOKEN": sync_auth.issue_tenant_token(tenant_id),
     }
     if mode == git_source.SOURCE_MODE_API:
@@ -2474,7 +2649,11 @@ def _run_tenant_container(base_image: str, container_name: str, site_id: str, re
         environment={
             **build_tenant_environment(tenant_id=site_id, repo_url=repo_url, api_url=api_url),
             # Seule origine autorisée à encadrer la vitrine : l'aperçu du Studio.
-            "PORTAL_ORIGIN": portal_frame_ancestors(browser_url),
+            "PORTAL_ORIGIN": (
+                f"{portal_frame_ancestors(browser_url)} https://app.{clean_domain(db.get_setting('client_base_domain', ''))}"
+                if (is_production_mode() and clean_domain(db.get_setting('client_base_domain', '')) not in ('localhost', '127.0.0.1'))
+                else portal_frame_ancestors(browser_url)
+            ),
             # Endpoint du micro-tracker injecté dans le HTML : il est appelé par le
             # **navigateur du visiteur**, jamais par le conteneur.
             "BROWSER_API_URL": browser_url,
@@ -2956,13 +3135,23 @@ def admin_comprehensive_health_probe() -> dict[str, Any]:
 # en direct ; les mesures viennent du dernier cycle de télémétrie (O(1)).
 
 def environment_info() -> dict[str, Any]:
-    production = is_production_mode()
+    base_domain = clean_domain(db.get_setting("client_base_domain", ""))
+    production = is_production_mode() and bool(base_domain and base_domain not in ("localhost", "127.0.0.1"))
+    landing_slug = (db.get_setting("landing_site_slug", "") or "").strip().lower()
     return {
         "mode": "production" if production else "local",
         "label": "Production" if production else "Local",
+        "base_domain": base_domain if production else "localhost",
         "api_public_url": api_public_url_setting(),
         "browser_api_url": browser_api_url_setting(),
         "client_base_domain": db.get_setting("client_base_domain", "") or "",
+        "landing_site_slug": landing_slug,
+        "urls": {
+            "dashboard": f"https://app.{base_domain}" if production else "http://localhost:8000/admin/dashboard",
+            "api": f"https://api.{base_domain}" if production else "http://localhost:8000",
+            "showcase": f"https://{base_domain}" if production else "http://localhost:8000",
+            "wildcard": f"https://*.{base_domain}" if production else "http://localhost:<port>",
+        },
     }
 
 
@@ -3636,6 +3825,9 @@ KNOWN_SETTINGS: tuple[dict[str, Any], ...] = (
     {"key": "client_base_domain", "group": "network", "label": "Domaine de base des vitrines",
      "help": "Hôte des URL de vitrines (http://<domaine>:<port>). Un domaine réel active le mode Production.",
      "placeholder": "localhost"},
+    {"key": "landing_site_slug", "group": "network", "label": "Site vitrine officiel (domaine racine)",
+     "help": "Identifiant du site (slug) servi sur le domaine racine (ex. 29th.site et www). Les autres sites sont sur {slug}.29th.site.",
+     "placeholder": "dwadaw"},
     {"key": "tenant_port_binding", "group": "network", "label": "Interface d'écoute des vitrines",
      "help": "127.0.0.1 : derrière le reverse-proxy (recommandé). 0.0.0.0 : exposition directe.",
      "default": "127.0.0.1", "options": ["127.0.0.1", "0.0.0.0"]},
@@ -3682,6 +3874,7 @@ def admin_platform() -> dict[str, Any]:
         "supabase_host": urlparse(db.SUPABASE_URL or "").hostname,
         "telemetry": telemetry_engine.get_diagnostics(),
         "host": {k: telemetry_engine.get_host().get(k) for k in ("hostname", "platform", "source")},
+        "sites": [{"site_id": s["site_id"], "name": s.get("name") or s["site_id"]} for s in load_catalog()],
     }
 
 

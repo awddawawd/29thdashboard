@@ -51,6 +51,7 @@ SYNC_TIMEOUT = float(os.getenv("SYNC_TIMEOUT", "30"))
 SYNC_ATTEMPTS = int(os.getenv("SYNC_ATTEMPTS", "5"))
 SYNC_PUSH_CHUNK = 500
 MAX_RESPONSE_BYTES = 16 * 1024 * 1024
+USER_AGENT = os.getenv("WAAS_USER_AGENT", "Mozilla/5.0 (compatible; WaaS-SyncEngine/1.0)")
 
 if not TENANT_ID or not SYNC_TOKEN:
     print(
@@ -84,6 +85,7 @@ def _api_call(
         request = urllib.request.Request(url, data=body, method=method)
         request.add_header("X-WAAS-Sync-Token", SYNC_TOKEN)
         request.add_header("Accept", "application/json")
+        request.add_header("User-Agent", USER_AGENT)
         if body is not None:
             request.add_header("Content-Type", "application/json")
 

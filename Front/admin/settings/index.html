@@ -23,6 +23,22 @@
             </div>
             <div class="ck-stack" id="settings-security" style="--ck-stack-gap: var(--ck-space-12)" hidden></div>
 
+            <!-- Bascule de Mode (Local ⇄ Production) en 1 clic -->
+            <article class="ck-card" id="mode-switcher-card" style="border-left: 4px solid var(--ck-primary, #4f46e5); box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+              <header class="ck-card__header">
+                <div class="ck-card__heading">
+                  <h2 class="ck-card__title">Mode de fonctionnement (Local ⇄ Production)</h2>
+                  <p class="ck-card__subtitle">Bascule automatique en un clic de l'ensemble de la flotte avec un seul nom de domaine racine</p>
+                </div>
+                <div class="ck-card__actions" id="mode-current-badge">
+                  <span class="ck-skeleton ck-skeleton--pill"></span>
+                </div>
+              </header>
+              <div class="ck-card__body" id="mode-switcher-body">
+                <!-- @include skeleton/panel.html -->
+              </div>
+            </article>
+
             <div class="ck-auto-grid" style="--ck-min: 420px">
               <article class="ck-card">
                 <header class="ck-card__header">
@@ -143,6 +159,182 @@
         const box = $('settings-security');
         box.hidden = !data.security.length;
         UI.replace(box, data.security.map((text) => UI.alert({ tone: 'warn', icon: 'shield-check', title: 'Sécurité', text })));
+      }
+
+      function renderModeSwitcher() {
+        const env = data.environment;
+        const isProd = env.mode === 'production';
+        const sites = data.sites || [];
+        const baseDomain = env.base_domain || (env.client_base_domain ? env.client_base_domain.replace(/^https?:\/\//, '').split('/')[0] : '29th.site');
+        const landingSlug = env.landing_site_slug || '';
+
+        UI.replace($('mode-current-badge'),
+          UI.badge(isProd ? 'Mode Production Actif' : 'Mode Local Actif', isProd ? 'good' : 'info'));
+
+        const cardBody = $('mode-switcher-body');
+
+        if (!isProd) {
+          const domainInput = UI.input('base_domain', {
+            id: 'switch-base-domain',
+            mono: true,
+            required: true,
+            value: baseDomain && baseDomain !== 'localhost' ? baseDomain : '29th.site',
+            placeholder: '29th.site'
+          });
+
+          const siteOptions = [
+            ['', '— Aucun (redirection vers app.<domaine>/login) —'],
+            ...sites.map(s => [s.site_id, `${s.name || s.site_id} (${s.site_id})`])
+          ];
+          const landingSelect = UI.select('landing_site_slug', siteOptions, {
+            id: 'switch-landing-slug',
+            value: landingSlug
+          });
+
+          const rebuildCheckbox = h('label', { class: 'ck-cluster', style: 'cursor: pointer; user-select: none; margin-top: 4px;' },
+            h('input', { type: 'checkbox', name: 'rebuild_containers', id: 'switch-rebuild', checked: true }),
+            h('span', { class: 'ck-text-14' }, 'Reconstruire automatiquement les conteneurs actifs (applique les nouvelles URLs d\'API)')
+          );
+
+          const submitBtn = UI.btn('🚀 Passer en mode Production', {
+            variant: 'primary',
+            icon: 'globe',
+            type: 'submit'
+          });
+
+          const planSummary = h('div', {
+            class: 'ck-card ck-card--subtle',
+            style: 'padding: var(--ck-space-16); background: var(--ck-surface-2, #f8fafc); border-radius: var(--ck-radius-md); font-size: 13px;'
+          },
+            h('div', { style: 'font-weight: 600; margin-bottom: 8px;' }, 'Architecture automatique générée à partir de ce domaine racine :'),
+            h('ul', { style: 'margin: 0; padding-left: 20px; line-height: 1.8;' },
+              h('li', null, h('strong', null, 'Site vitrine officiel (produits) : '), h('span', { class: 'ck-mono' }, 'https://<domaine>'), ' & ', h('span', { class: 'ck-mono' }, 'https://www.<domaine>')),
+              h('li', null, h('strong', null, 'Cockpit & portail clients : '), h('span', { class: 'ck-mono' }, 'https://app.<domaine>')),
+              h('li', null, h('strong', null, 'API publique & synchronisation : '), h('span', { class: 'ck-mono' }, 'https://api.<domaine>')),
+              h('li', null, h('strong', null, 'Vitrines clients hébergées : '), h('span', { class: 'ck-mono' }, 'https://<slug>.<domaine>'))
+            )
+          );
+
+          const form = h('form', { class: 'ck-form ck-stack', style: '--ck-stack-gap: var(--ck-space-16);' },
+            h('p', { class: 'ck-text-body' },
+              'Entrez votre nom de domaine racine (ex. ', h('strong', null, '29th.site'), '). Le système configurera l\'API, les conteneurs et le routeur multi-sous-domaines en une seule action.'
+            ),
+            h('div', { class: 'ck-form-grid' },
+              UI.field('Nom de domaine racine', domainInput, {
+                required: true,
+                help: 'Domaine principal (sans https:// ni sous-domaine). Ex. 29th.site'
+              }),
+              UI.field('Site vitrine pour le domaine racine', landingSelect, {
+                help: 'Ce site sera servi directement sur 29th.site et www.29th.site'
+              })
+            ),
+            rebuildCheckbox,
+            planSummary,
+            h('div', { class: 'ck-form-actions' }, submitBtn)
+          );
+
+          form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const domainVal = domainInput.value.trim();
+            if (!domainVal) return;
+            if (!confirm(`Confirmer le passage en MODE PRODUCTION avec le domaine racine '${domainVal}' ?`)) return;
+
+            UI.busy(submitBtn, true, 'Activation du mode production…');
+            try {
+              const res = await App.api('/admin/api/fleet/switch-mode', {
+                method: 'POST',
+                body: {
+                  mode: 'production',
+                  base_domain: domainVal,
+                  landing_site_slug: landingSelect.value,
+                  rebuild_containers: $('switch-rebuild').checked
+                }
+              });
+              App.toastOk('Mode Production activé !', `Domaine ${res.environment.base_domain} configuré.`);
+              await load();
+            } catch (err) {
+              App.toastError(err);
+            } finally {
+              UI.busy(submitBtn, false);
+            }
+          });
+
+          UI.replace(cardBody, form);
+
+        } else {
+          const urls = env.urls || {
+            showcase: `https://${baseDomain}`,
+            dashboard: `https://app.${baseDomain}`,
+            api: `https://api.${baseDomain}`,
+            wildcard: `https://*.${baseDomain}`
+          };
+
+          const switchLocalBtn = UI.btn('🔁 Basculer en mode Local (localhost)', {
+            variant: 'secondary',
+            icon: 'laptop',
+            type: 'button'
+          });
+
+          const updateDomainBtn = UI.btn('Mettre à jour le domaine / vitrine', {
+            variant: 'ghost',
+            size: 'sm',
+            icon: 'edit',
+            type: 'button'
+          });
+
+          const urlsList = UI.dl([
+            ['Domaine racine (Site Agence / Produits)', h('div', { class: 'ck-cluster' },
+              h('a', { href: urls.showcase, target: '_blank', class: 'ck-mono ck-text-13', style: 'color: var(--ck-primary); text-decoration: underline;' }, urls.showcase),
+              UI.badge(landingSlug ? `Vitrine: ${landingSlug}` : 'Non assigné (redirige vers app)', landingSlug ? 'accent' : 'neutral')
+            )],
+            ['Tableau de bord (Cockpit / Studio)', h('div', { class: 'ck-cluster' },
+              h('a', { href: urls.dashboard, target: '_blank', class: 'ck-mono ck-text-13', style: 'color: var(--ck-primary); text-decoration: underline;' }, urls.dashboard),
+              UI.badge('Admin & Portail', 'good')
+            )],
+            ['Plan de contrôle & API publique', h('div', { class: 'ck-cluster' },
+              h('a', { href: urls.api, target: '_blank', class: 'ck-mono ck-text-13', style: 'color: var(--ck-primary); text-decoration: underline;' }, urls.api),
+              UI.badge('Télémétrie & Sync', 'info')
+            )],
+            ['Vitrines clients (Multi-tenant)', h('div', { class: 'ck-cluster' },
+              h('span', { class: 'ck-mono ck-text-13' }, urls.wildcard),
+              UI.badge('Routé par slug', 'good')
+            )],
+            ['Redirection www', h('span', { class: 'ck-mono ck-text-13' }, `https://www.${baseDomain} ➔ 301 vers https://${baseDomain}`)]
+          ]);
+
+          switchLocalBtn.addEventListener('click', async () => {
+            if (!confirm('Confirmer le retour en MODE LOCAL ? (Les URLs repasseront sur localhost/127.0.0.1)')) return;
+            UI.busy(switchLocalBtn, true, 'Retour en local…');
+            try {
+              await App.api('/admin/api/fleet/switch-mode', {
+                method: 'POST',
+                body: { mode: 'local' }
+              });
+              App.toastOk('Mode Local activé', 'La plateforme écoute désormais sur localhost.');
+              await load();
+            } catch (err) {
+              App.toastError(err);
+            } finally {
+              UI.busy(switchLocalBtn, false);
+            }
+          });
+
+          updateDomainBtn.addEventListener('click', () => {
+            data.environment.mode = 'local';
+            renderModeSwitcher();
+          });
+
+          UI.replace(cardBody, h('div', { class: 'ck-stack', style: '--ck-stack-gap: var(--ck-space-16);' },
+            h('p', { class: 'ck-text-body' },
+              'La plateforme est en ', h('strong', null, 'production'), '. Tous les sous-domaines sont gérés et routés automatiquement par le routeur de domaine WaaS.'
+            ),
+            urlsList,
+            h('div', { class: 'ck-cluster', style: 'justify-content: space-between; margin-top: 8px;' },
+              switchLocalBtn,
+              updateDomainBtn
+            )
+          ));
+        }
       }
 
       function renderEnv() {
@@ -297,6 +489,7 @@
         data = await App.api('/admin/api/platform');
         renderKpis();
         renderSecurity();
+        renderModeSwitcher();
         renderEnv();
         renderSchema();
         renderGroups();

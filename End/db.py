@@ -899,7 +899,7 @@ def upload_tenant_image(tenant_id: str, file_bytes: bytes, file_name: str, conte
 
 _SETTINGS_CACHE: dict[str, str] = {}
 _LAST_CACHE_FETCH = 0.0
-CACHE_TTL_SECONDS = 60.0
+CACHE_TTL_SECONDS = 4.0
 
 
 def reload_settings_cache() -> None:
